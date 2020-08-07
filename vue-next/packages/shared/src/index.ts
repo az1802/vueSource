@@ -129,6 +129,11 @@ export const capitalize = cacheStringFunction(
 export const hasChanged = (value: any, oldValue: any): boolean =>
   value !== oldValue && (value === value || oldValue === oldValue)
 
+/**
+ * 执行函数数组
+ * @param fns 函数数组
+ * @param arg 函数执行的参数
+ */  
 export const invokeArrayFns = (fns: Function[], arg?: any) => {
   for (let i = 0; i < fns.length; i++) {
     fns[i](arg)

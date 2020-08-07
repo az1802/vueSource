@@ -16,6 +16,9 @@
     <script>
         let {ref,createApp} = Vue;
        let vm =  createApp({
+           mounted() {
+                console.log("before create");
+           },
            setup(){
             let count = ref(1);
             function addCount(){

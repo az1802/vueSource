@@ -441,6 +441,11 @@ export function validateComponentName(name: string, config: AppConfig) {
 
 export let isInSSRComponentSetup = false
 
+/**
+ * 执行setup函数同时完成template转换为render函数以及组件options的处理
+ * @param instance 组件实例对象
+ * @param isSSR 是否是服务端渲染
+ */
 export function setupComponent(
   instance: ComponentInternalInstance,
   isSSR = false
@@ -452,6 +457,7 @@ export function setupComponent(
   initProps(instance, props, isStateful, isSSR)
   initSlots(instance, children)
 
+  // 服务端下异步组件时会返回一个promise对象
   const setupResult = isStateful
     ? setupStatefulComponent(instance, isSSR)
     : undefined
@@ -459,6 +465,11 @@ export function setupComponent(
   return setupResult
 }
 
+/**
+ * 会对组件内部参数名称合法性进行检测,完成options处理,setup函数运行,render函数生成
+ * @param instance 组件实例对象
+ * @param isSSR 是否是服务端渲染
+ */
 function setupStatefulComponent(
   instance: ComponentInternalInstance,
   isSSR: boolean
@@ -531,6 +542,12 @@ function setupStatefulComponent(
   }
 }
 
+/**
+ * 处理setup函数运行返回的结果,函数会被当做渲染函数。利用finishComponentSetup完成组件的初始化
+ * @param instance 组件实例对象
+ * @param setupResult setup函数返回的结果
+ * @param isSSR 是否是服务端渲染
+ */
 export function handleSetupResult(
   instance: ComponentInternalInstance,
   setupResult: unknown,
@@ -540,7 +557,7 @@ export function handleSetupResult(
     // setup returned an inline render function
     instance.render = setupResult as InternalRenderFunction
   } else if (isObject(setupResult)) {
-    if (__DEV__ && isVNode(setupResult)) {
+    if (__DEV__ && isVNode(setupResult)) {//不能直接返回vnode节点,必须通过函数的形式
       warn(
         `setup() should not return VNodes directly - ` +
           `return a render function instead.`
@@ -559,7 +576,7 @@ export function handleSetupResult(
       }`
     )
   }
-  finishComponentSetup(instance, isSSR)
+  finishComponentSetup(instance, isSSR)//对自检进行注册
 }
 
 type CompileFunction = (
@@ -594,6 +611,7 @@ function finishComponentSetup(
       if (__DEV__) {
         startMeasure(instance, `compile`)
       }
+      // 生成组件的render函数
       Component.render = compile(Component.template, {
         isCustomElement: instance.appContext.config.isCustomElement,
         delimiters: Component.delimiters
@@ -616,10 +634,10 @@ function finishComponentSetup(
     }
   }
 
-  // support for 2.x options
+  // support for 2.x options  支持vue2的options API
   if (__FEATURE_OPTIONS_API__) {
     currentInstance = instance
-    applyOptions(instance, Component)
+    applyOptions(instance, Component)//
     currentInstance = null
   }
 

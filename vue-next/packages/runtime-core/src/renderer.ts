@@ -260,6 +260,10 @@ const prodEffectOptions = {
   scheduler: queueJob
 }
 
+/**
+ * 创建effect options(类似vue2中的watcher options)
+ * @param instance 组件实例对象
+ */
 function createDevEffectOptions(
   instance: ComponentInternalInstance
 ): ReactiveEffectOptions {
@@ -1185,11 +1189,11 @@ function baseCreateRenderer(
     // setup() is async. This component relies on async logic to be resolved
     // before proceeding
     if (__FEATURE_SUSPENSE__ && instance.asyncDep) {
-      if (!parentSuspense) {
+      if (!parentSuspense) {    // 异步组件应该被SUSPENSE组件包裹
         if (__DEV__) warn('async setup() is used without a suspense boundary!')
         return
       }
-
+      // 将异步组件的promise对象压入到父组件实例对象中
       parentSuspense.registerDep(instance, setupRenderEffect)
 
       // Give it a placeholder if this is not hydration
@@ -1200,6 +1204,7 @@ function baseCreateRenderer(
       return
     }
 
+    // 创建render函数的effect,对应vue2中的render watcher
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1251,6 +1256,16 @@ function baseCreateRenderer(
     }
   }
 
+  /**
+   * 创建render函数对应的effect(类似与vue2的render watcher)
+   * @param instance 组件实例对象
+   * @param initialVNode 组件的根vnode节点
+   * @param container 组件对应的DOM节点
+   * @param anchor 父节点
+   * @param parentSuspense 父Suspense实例对象
+   * @param isSVG 是否是SVG标签
+   * @param optimized 
+   */
   const setupRenderEffect: SetupRenderEffectFn = (
     instance,
     initialVNode,

@@ -229,6 +229,19 @@ export interface SuspenseBoundary {
 
 let hasWarned = false
 
+/**
+ * 创建异步组件边界
+ * @param vnode 
+ * @param parent 
+ * @param parentComponent 
+ * @param container 
+ * @param hiddenContainer 
+ * @param anchor 
+ * @param isSVG 
+ * @param optimized 
+ * @param rendererInternals 
+ * @param isHydrating 
+ */
 function createSuspenseBoundary(
   vnode: VNode,
   parent: SuspenseBoundary | null,
@@ -273,7 +286,7 @@ function createSuspenseBoundary(
     container,
     hiddenContainer,
     anchor,
-    deps: 0,
+    deps: 0, //内部异步组件的计数器,类似于Promise.all的功能。判断内部异步组件是否全部加载完毕
     subTree: content,
     fallbackTree: fallback,
     isHydrating,
@@ -417,9 +430,10 @@ function createSuspenseBoundary(
         .asyncDep!.catch(err => {
           handleError(err, instance, ErrorCodes.SETUP_FUNCTION)
         })
-        .then(asyncSetupResult => {
+        .then(asyncSetupResult => {//异步组件返回结果之后重新渲染
           // retry when the setup() promise resolves.
           // component may have been unmounted before resolve.
+          // 还未等待组件返回结果已经解绑则不重新渲染
           if (instance.isUnmounted || suspense.isUnmounted) {
             return
           }
@@ -430,7 +444,7 @@ function createSuspenseBoundary(
           if (__DEV__) {
             pushWarningContext(vnode)
           }
-          handleSetupResult(instance, asyncSetupResult, false)
+          handleSetupResult(instance, asyncSetupResult, false) //处理异步组件返回的结果
           if (hydratedEl) {
             // vnode may have been replaced if an update happened before the
             // async dep is resolved.
@@ -452,7 +466,7 @@ function createSuspenseBoundary(
             isSVG,
             optimized
           )
-          updateHOCHostEl(instance, vnode.el)
+          updateHOCHostEl(instance, vnode.el) //更新高阶组件的DOM节点
           if (__DEV__) {
             popWarningContext()
           }

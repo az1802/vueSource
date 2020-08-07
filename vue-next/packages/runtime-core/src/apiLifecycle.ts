@@ -13,6 +13,14 @@ import { pauseTracking, resetTracking, DebuggerEvent } from '@vue/reactivity'
 
 export { onActivated, onDeactivated } from './components/KeepAlive'
 
+/**
+ * 将钩子函数添加到组件实例对象上的hooks上。
+ * mounted会简写为m,组件实例上存在key m 值为数组存储需要执行的声明周期函数.使用时循环数组执行
+ * @param type 钩子函数类别
+ * @param hook 需要执行的钩子函数
+ * @param target 组件实例对象
+ * @param prepend true ? 钩子函数添加在最前面 : 添加在尾部
+ */
 export function injectHook(
   type: LifecycleHooks,
   hook: Function & { __weh?: Function },
@@ -32,10 +40,12 @@ export function injectHook(
         }
         // disable tracking inside all lifecycle hooks
         // since they can potentially be called inside effects.
+        // 生命周期内部访问的data都不会触发依赖收集
         pauseTracking()
         // Set currentInstance during hook invocation.
         // This assumes the hook does not synchronously trigger other hooks, which
         // can only be false when the user does something really funky.
+        // 设置当前实例对象保证钩子函数执行时拿到的实例对象是对应的组件实例对象
         setCurrentInstance(target)
         const res = callWithAsyncErrorHandling(hook, target, type, args)
         setCurrentInstance(null)
@@ -51,6 +61,7 @@ export function injectHook(
     const apiName = `on${capitalize(
       ErrorTypeStrings[type].replace(/ hook$/, '')
     )}`
+    // 在使用async setup是需要保证钩子函数执行在在第一个await之前,这样执行setup函数的时候钩子函数可以被成功注入.否则后续注入的时候没有组件的实例对象绑定.
     warn(
       `${apiName} is called when there is no active component instance to be ` +
         `associated with. ` +
@@ -63,6 +74,10 @@ export function injectHook(
   }
 }
 
+/**
+ * 返回一个函数用于生命周期函数在实例对象上的注入
+ * @param lifecycle 生命周期名称
+ */
 export const createHook = <T extends Function = () => any>(
   lifecycle: LifecycleHooks
 ) => (hook: T, target: ComponentInternalInstance | null = currentInstance) =>

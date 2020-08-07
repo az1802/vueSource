@@ -43,6 +43,10 @@ export function nextTick(fn?: () => void): Promise<void> {
   return fn ? p.then(fn) : p
 }
 
+/**
+ * 添加调度任务,已经存在于queue队列中的job不会被重复添加
+ * @param job 需要执行的调度任务
+ */
 export function queueJob(job: SchedulerJob) {
   // the dedupe search uses the startIndex argument of Array.includes()
   // by default the search index includes the current job that is being run

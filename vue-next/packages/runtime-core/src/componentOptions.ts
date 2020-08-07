@@ -366,6 +366,14 @@ type DataFn = (vm: ComponentPublicInstance) => any
 
 export let isInBeforeCreate = false
 
+/**
+ * 处理组件的options
+ * @param instance 组件实例对象
+ * @param options 组件的options参数
+ * @param deferredData 
+ * @param deferredWatch 
+ * @param asMixin 是否作为混入的方式处理options.  mixin extends扩展的options处理的时候会被标记为mixin
+ */
 export function applyOptions(
   instance: ComponentInternalInstance,
   options: ComponentOptions,
@@ -373,6 +381,7 @@ export function applyOptions(
   deferredWatch: ComponentWatchOptions[] = [],
   asMixin: boolean = false
 ) {
+  // 提取vue2支持的options
   const {
     // composition
     mixins,
@@ -410,7 +419,7 @@ export function applyOptions(
   // applyOptions is called non-as-mixin once per instance
   if (!asMixin) {
     isInBeforeCreate = true
-    callSyncHook('beforeCreate', options, publicThis, globalMixins)
+    callSyncHook('beforeCreate', options, publicThis, globalMixins)//触发beforeCreate钩子函数
     isInBeforeCreate = false
     // global mixins are applied first
     applyMixins(instance, globalMixins, deferredData, deferredWatch)
@@ -425,7 +434,7 @@ export function applyOptions(
     applyMixins(instance, mixins, deferredData, deferredWatch)
   }
 
-  const checkDuplicateProperties = __DEV__ ? createDuplicateChecker() : null
+  const checkDuplicateProperties = __DEV__ ? createDuplicateChecker() : null //生成检查重复的属性的函数
 
   if (__DEV__) {
     const propsOptions = normalizePropsOptions(options)[0]
@@ -443,7 +452,7 @@ export function applyOptions(
   // - data (deferred since it relies on `this` access)
   // - computed
   // - watch (deferred since it relies on `this` access)
-
+ 
   if (injectOptions) {
     if (isArray(injectOptions)) {
       for (let i = 0; i < injectOptions.length; i++) {
@@ -616,13 +625,20 @@ export function applyOptions(
   }
 }
 
+/**
+ * 同步执行beforeCreate create钩子函数。优先级全局-->extends-->mixins-->自身options
+ * @param name 同钩子函数名称
+ * @param options 组件的otpions参数
+ * @param ctx 执行上下文
+ * @param globalMixins 全局的混入,优先级最高
+ */
 function callSyncHook(
   name: 'beforeCreate' | 'created',
   options: ComponentOptions,
   ctx: ComponentPublicInstance,
   globalMixins: ComponentOptions[]
 ) {
-  callHookFromMixins(name, globalMixins, ctx)
+  callHookFromMixins(name, globalMixins, ctx)//优先执行全局的
   const baseHook = options.extends && options.extends[name]
   if (baseHook) {
     baseHook.call(ctx)
