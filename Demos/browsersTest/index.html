@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="vue.global.js"></script>
+</head>
+<body>
+    <div id="root" name="aaa">
+        <button @click="addCount">add</button>
+        <div>
+           {{count}}
+        </div>
+    </div>
+    <script>
+        let {ref,createApp} = Vue;
+       let vm =  createApp({
+           setup(){
+            let count = ref(1);
+            function addCount(){
+                count.value++;
+            }
+               return {
+                   count,
+                   addCount
+               }
+           }
+       }).mount("#root")
+    </script>
+</body>
+</html>

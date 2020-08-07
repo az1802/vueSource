@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="root"></div>
+    
+
+
+    <script>
+        // 这里简化版不做参数判断的处理传入的必定是对象,且没有被代理过
+        function reactive(target){
+            createReactiveObject(target)
+        }
+        function createReactiveObject(target){
+            let baseHandles = {
+
+            }
+
+            const observed = new Proxy(target,baseHandles)
+
+            return observed;
+        }
+
+        let rootDom = document.getElementById("root");
+        function render(state){
+            if(state.flag){
+                rootDom.innerHTML = `content----${state.a}`
+            }else{
+                rootDom.innerHTML = `content----${state.b}`
+            }
+        }
+
+        var tarObj = {
+            a:"aa"
+        }
+
+
+    var p = new Proxy(tarObj,{
+            get(target,key,receiver){
+                console.log(target[key]);
+                console.log(receiver);
+
+            }
+        })
+
+
+
+    </script>
+</body>
+</html>
