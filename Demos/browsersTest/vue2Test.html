@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/vue/2.6.11/vue.common.dev.js"></script>
+</head>
+<body>
+    <div id="root" name="aaa">
+        <button @click="addCount">add</button>
+        <div>
+           <!-- {{state.count}} -->
+           {{newCount}}
+        </div>
+</div>
+<script>
+   new Vue({
+       el:"#root",
+       data(){
+           return {
+               state:{
+                   count:1
+               }
+           }
+       },
+       beforeUpdate() {
+         console.log("update");  
+       },
+       methods: {
+        addCount(){
+            this.state.count+=1
+        }
+       },
+       computed: {
+        newCount(){
+            if(this.state.count==2 || this.state.count==3){
+                    return 3
+                }else{
+                    return this.state.count*2
+                }
+        }
+       },
+   })
+</script>
+</body>
+</html>

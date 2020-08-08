@@ -80,6 +80,7 @@ export const enum PatchFlags {
   // when encountering non-compiler generated slots (i.e. manually written
   // render functions, which should always be fully diffed)
   // OR manually cloneVNodes
+  // TODO 
   BAIL = -2
 }
 
@@ -92,10 +93,10 @@ export const PatchFlagNames = {
   [PatchFlags.FULL_PROPS]: `FULL_PROPS`,//动态属性
   [PatchFlags.HYDRATE_EVENTS]: `HYDRATE_EVENTS`,//
   [PatchFlags.STABLE_FRAGMENT]: `STABLE_FRAGMENT`,//fragment标签其内部节点顺序是稳定的
-  [PatchFlags.KEYED_FRAGMENT]: `KEYED_FRAGMENT`,
+  [PatchFlags.KEYED_FRAGMENT]: `KEYED_FRAGMENT`,//含有key属性的fragment标签
   [PatchFlags.UNKEYED_FRAGMENT]: `UNKEYED_FRAGMENT`,
   [PatchFlags.DYNAMIC_SLOTS]: `DYNAMIC_SLOTS`,//动态插槽
-  [PatchFlags.NEED_PATCH]: `NEED_PATCH`,//
+  [PatchFlags.NEED_PATCH]: `NEED_PATCH`,//需要进行patch更新
   [PatchFlags.HOISTED]: `HOISTED`,//静态提升(负数表示永远不需要更新)
   [PatchFlags.BAIL]: `BAIL`
 }

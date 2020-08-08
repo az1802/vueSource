@@ -43,7 +43,7 @@ const arrayInstrumentations: Record<string, Function> = {}
 })
 
 /**
- * 创建响应式代理的get方法
+ * 创建响应式代理的get方法。先处理一些内部属性的值直接返回结果并不进行依赖收集
  * @param isReadonly 访问的值是否只读,只读不会进行依赖(dep)收集,因为后续是不能更改此值的
  * @param shallow 不会对子级的key进行深度的代理,即深度子级的访问使用原始对象不会进行依赖收集
  */
@@ -95,6 +95,7 @@ function createGetter(isReadonly = false, shallow = false) {
       // Convert returned value into a proxy as well. we do the isObject check
       // here to avoid invalid value warning. Also need to lazy access readonly
       // and reactive here to avoid circular dependency.
+      // 深度响应式处理,只有访问到具体的值时才回去做响应式处理类类似懒加载
       return isReadonly ? readonly(res) : reactive(res)
     }
 

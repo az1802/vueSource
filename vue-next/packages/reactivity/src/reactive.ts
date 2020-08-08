@@ -13,12 +13,12 @@ import {
 import { UnwrapRef, Ref } from './ref'
 
 export const enum ReactiveFlags {
-  SKIP = '__v_skip',
-  IS_REACTIVE = '__v_isReactive',
-  IS_READONLY = '__v_isReadonly',
-  RAW = '__v_raw',
-  REACTIVE = '__v_reactive',
-  READONLY = '__v_readonly'
+  SKIP = '__v_skip',//跳过响应式的处理
+  IS_REACTIVE = '__v_isReactive',//是否可以被响应式
+  IS_READONLY = '__v_isReadonly',//是否是只读
+  RAW = '__v_raw', //存储原始值
+  REACTIVE = '__v_reactive',//存放代理值
+  READONLY = '__v_readonly'//存放只读的代理值
 }
 
 interface Target {
@@ -35,6 +35,7 @@ const isObservableType = /*#__PURE__*/ makeMap(
   'Object,Array,Map,Set,WeakMap,WeakSet'
 )
 
+// value是否可以变为响应式。必须是Object,Array,Map,Set,WeakMap,WeakSet类型且不含有ReactiveFlags.SKIP且可以被扩展
 const canObserve = (value: Target): boolean => {
   return (
     !value[ReactiveFlags.SKIP] &&
@@ -53,6 +54,7 @@ type UnwrapNestedRefs<T> = T extends Ref ? T : UnwrapRef<T>
 export function reactive<T extends object>(target: T): UnwrapNestedRefs<T>
 export function reactive(target: object) {
   // if trying to observe a readonly proxy, return the readonly version.
+  // 可读的响应式代理对象直接返回其本身
   if (target && (target as Target)[ReactiveFlags.IS_READONLY]) {
     return target
   }
@@ -124,6 +126,13 @@ export function shallowReadonly<T extends object>(
   )
 }
 
+/**
+ * 创建target的代理对象并返回
+ * @param target 原始值
+ * @param isReadonly 只读
+ * @param baseHandlers 基础的proxy配置对象
+ * @param collectionHandlers set,weakSet,map,weakMap的proxy配置对象
+ */
 function createReactiveObject(
   target: Target,
   isReadonly: boolean,
@@ -155,14 +164,16 @@ function createReactiveObject(
   if (!canObserve(target)) {
     return target
   }
+  // set,weakSet,map,weakMap与Object使用的代理配置不同
   const observed = new Proxy(
     target,
     collectionTypes.has(target.constructor) ? collectionHandlers : baseHandlers
   )
-  def(target, reactiveFlag, observed)
+  def(target, reactiveFlag, observed)//建立target与代理对象的联系
   return observed
 }
 
+// 是否被响应式处理过
 export function isReactive(value: unknown): boolean {
   if (isReadonly(value)) {
     return isReactive((value as Target)[ReactiveFlags.RAW])
@@ -170,20 +181,24 @@ export function isReactive(value: unknown): boolean {
   return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
 }
 
+// 是否只读
 export function isReadonly(value: unknown): boolean {
   return !!(value && (value as Target)[ReactiveFlags.IS_READONLY])
 }
-
+\
+// 是否是代理对象
 export function isProxy(value: unknown): boolean {
   return isReactive(value) || isReadonly(value)
 }
 
+// 传入proxy对象返回其原始值
 export function toRaw<T>(observed: T): T {
   return (
     (observed && toRaw((observed as Target)[ReactiveFlags.RAW])) || observed
   )
 }
 
+// 标记value不可以被响应式处理
 export function markRaw<T extends object>(value: T): T {
   def(value, ReactiveFlags.SKIP, true)
   return value

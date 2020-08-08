@@ -1,5 +1,6 @@
 const escapeRE = /["'&<>]/
 
+// (",&,',<,>)转换为html实体字符
 export function escapeHtml(string: unknown) {
   const str = '' + string
   const match = escapeRE.exec(str)
@@ -47,6 +48,7 @@ export function escapeHtml(string: unknown) {
 // https://www.w3.org/TR/html52/syntax.html#comments
 const commentStripRE = /^-?>|<!--|-->|--!>|<!-$/g
 
+// 注释节点替换空字符串
 export function escapeHtmlComment(src: string): string {
   return src.replace(commentStripRE, '')
 }

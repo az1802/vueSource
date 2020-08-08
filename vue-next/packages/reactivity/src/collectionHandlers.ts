@@ -16,9 +16,11 @@ type WeakCollections = WeakMap<any, any> | WeakSet<any>
 type MapTypes = Map<any, any> | WeakMap<any, any>
 type SetTypes = Set<any> | WeakSet<any>
 
+// 响应式处理值
 const toReactive = <T extends unknown>(value: T): T =>
   isObject(value) ? reactive(value) : value
 
+  // 代理值变为只读
 const toReadonly = <T extends unknown>(value: T): T =>
   isObject(value) ? readonly(value) : value
 
@@ -27,6 +29,7 @@ const toShallow = <T extends unknown>(value: T): T => value
 const getProto = <T extends CollectionTypes>(v: T): any =>
   Reflect.getPrototypeOf(v)
 
+// map对象代理配置中的get
 function get(
   target: MapTypes,
   key: unknown,
@@ -37,8 +40,8 @@ function get(
   // of the value
   target = (target as any)[ReactiveFlags.RAW]
   const rawTarget = toRaw(target)
-  const rawKey = toRaw(key)
-  if (key !== rawKey) {
+  const rawKey = toRaw(key) //map对象的key可能是响应式对象
+  if (key !== rawKey) { //处理中间层是ref的情况此时针对key也要进行一层依赖收集
     !isReadonly && track(rawTarget, TrackOpTypes.GET, key)
   }
   !isReadonly && track(rawTarget, TrackOpTypes.GET, rawKey)
@@ -51,6 +54,7 @@ function get(
   }
 }
 
+// map,set对象代理配置中的has
 function has(this: CollectionTypes, key: unknown, isReadonly = false): boolean {
   const target = (this as any)[ReactiveFlags.RAW]
   const rawTarget = toRaw(target)
@@ -62,12 +66,14 @@ function has(this: CollectionTypes, key: unknown, isReadonly = false): boolean {
   return target.has(key) || target.has(rawKey)
 }
 
+// map,set对象代理配置中的size
 function size(target: IterableCollections, isReadonly = false) {
   target = (target as any)[ReactiveFlags.RAW]
   !isReadonly && track(toRaw(target), TrackOpTypes.ITERATE, ITERATE_KEY)
   return Reflect.get(target, 'size', target)
 }
 
+// map,set对象代理配置中的get
 function add(this: SetTypes, value: unknown) {
   value = toRaw(value)
   const target = toRaw(this)
@@ -80,11 +86,13 @@ function add(this: SetTypes, value: unknown) {
   return result
 }
 
+// map对象代理配置中的set
 function set(this: MapTypes, key: unknown, value: unknown) {
   value = toRaw(value)
   const target = toRaw(this)
   const { has, get, set } = getProto(target)
 
+  // 因为map对象的key可以是对象,这里确保不出现重复的key
   let hadKey = has.call(target, key)
   if (!hadKey) {
     key = toRaw(key)
@@ -93,6 +101,7 @@ function set(this: MapTypes, key: unknown, value: unknown) {
     checkIdentityKeys(target, has, key)
   }
 
+  // 提取原始值以及设置新值
   const oldValue = get.call(target, key)
   const result = set.call(target, key, value)
   if (!hadKey) {
@@ -103,6 +112,7 @@ function set(this: MapTypes, key: unknown, value: unknown) {
   return result
 }
 
+// map对象代理配置中的set
 function deleteEntry(this: CollectionTypes, key: unknown) {
   const target = toRaw(this)
   const { has, get, delete: del } = getProto(target)
@@ -215,6 +225,7 @@ function createIterableMethod(
   }
 }
 
+// 针对只读的代理,使用add,set,delete,clear均会发出警告信息
 function createReadonlyMethod(type: TriggerOpTypes): Function {
   return function(this: CollectionTypes, ...args: unknown[]) {
     if (__DEV__) {

@@ -1,6 +1,7 @@
 import { setDevtoolsHook } from '@vue/runtime-dom'
 import { getGlobalThis } from '@vue/shared'
 
+// 初始化dev环境的提示信息
 export function initDev() {
   const target = getGlobalThis()
 

@@ -18,9 +18,11 @@ export interface Ref<T = any> {
 
 export type ToRefs<T = any> = { [K in keyof T]: Ref<T[K]> }
 
+// val转换为响应式,不可以被reactive处理返回原值
 const convert = <T extends unknown>(val: T): T =>
   isObject(val) ? reactive(val) : val
 
+// 是否是ref值
 export function isRef<T>(r: Ref<T> | unknown): r is Ref<T>
 export function isRef(r: any): r is Ref {
   return r ? r.__v_isRef === true : false
@@ -41,6 +43,11 @@ export function shallowRef(value?: unknown) {
   return createRef(value, true)
 }
 
+/**
+ * 将原始值转换为一个ref响应式的值
+ * @param rawValue 原始值
+ * @param shallow 是否浅层响应式处理
+ */
 function createRef(rawValue: unknown, shallow = false) {
   if (isRef(rawValue)) {
     return rawValue
@@ -49,11 +56,11 @@ function createRef(rawValue: unknown, shallow = false) {
   const r = {
     __v_isRef: true,
     get value() {
-      track(r, TrackOpTypes.GET, 'value')
+      track(r, TrackOpTypes.GET, 'value')//访问该值触发依赖收集
       return value
     },
     set value(newVal) {
-      if (hasChanged(toRaw(newVal), rawValue)) {
+      if (hasChanged(toRaw(newVal), rawValue)) {//只发生改变运行相关effect
         rawValue = newVal
         value = shallow ? newVal : convert(newVal)
         trigger(r, TriggerOpTypes.SET, 'value', newVal)
@@ -63,10 +70,12 @@ function createRef(rawValue: unknown, shallow = false) {
   return r
 }
 
+// 触发ref对应的effect,进行相关的更新
 export function triggerRef(ref: Ref) {
   trigger(ref, TriggerOpTypes.SET, 'value', __DEV__ ? ref.value : void 0)
 }
 
+// 返回ref化时对应的原始值
 export function unref<T>(ref: T): T extends Ref<infer V> ? V : T {
   return isRef(ref) ? (ref.value as any) : ref
 }
@@ -84,6 +93,7 @@ const shallowUnwrapHandlers: ProxyHandler<any> = {
   }
 }
 
+// TODO 代理ref的值
 export function proxyRefs<T extends object>(
   objectWithRefs: T
 ): ShallowUnwrapRef<T> {
@@ -100,6 +110,11 @@ export type CustomRefFactory<T> = (
   set: (value: T) => void
 }
 
+/**
+ * 用于自定义一个 ref，可以显式地控制依赖追踪和触发响应，接受一个工厂函数，两个参数分别是用于追踪的 track 与用于触发响应的 trigger
+ * 并返回一个一个带有 get 和 set 属性的对象
+ * @param factory 
+ */
 export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
   const { get, set } = factory(
     () => track(r, TrackOpTypes.GET, 'value'),
@@ -117,6 +132,7 @@ export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
   return r as any
 }
 
+// 把一个响应式对象转换成普通对象，该普通对象的每个 property 都是一个 ref ，和响应式对象 property 一一对应。
 export function toRefs<T extends object>(object: T): ToRefs<T> {
   if (__DEV__ && !isProxy(object)) {
     console.warn(`toRefs() expects a reactive object but received a plain one.`)
@@ -128,6 +144,7 @@ export function toRefs<T extends object>(object: T): ToRefs<T> {
   return ret
 }
 
+// 可以用来为一个 reactive 对象的属性创建一个 ref。这个 ref 可以被传递并且能够保持响应性。
 export function toRef<T extends object, K extends keyof T>(
   object: T,
   key: K

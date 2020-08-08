@@ -1,3 +1,4 @@
+// 插槽节点的类型
 export const enum SlotFlags {
   /**
    * Stable slots that only reference slot props or context state. The slot

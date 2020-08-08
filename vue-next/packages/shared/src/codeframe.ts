@@ -1,5 +1,11 @@
-const range: number = 2
+const range: number = 2 //同来控制提示代码错误的代码片段显示的范围
 
+/**
+ * 当编译出错时可以用来提示字符串中哪里出现了错误
+ * @param source 源码字符串
+ * @param start 开始地址
+ * @param end 结束地址
+ */
 export function generateCodeFrame(
   source: string,
   start = 0,
@@ -11,6 +17,7 @@ export function generateCodeFrame(
   for (let i = 0; i < lines.length; i++) {
     count += lines[i].length + 1
     if (count >= start) {
+      // 控制显示错误提示范围(最多显示5行)
       for (let j = i - range; j <= i + range || end > count; j++) {
         if (j < 0 || j >= lines.length) continue
         const line = j + 1

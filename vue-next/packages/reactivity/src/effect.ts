@@ -54,6 +54,11 @@ export function isEffect(fn: any): fn is ReactiveEffect {
   return fn && fn._isEffect === true
 }
 
+/**
+ * 传入副作用函数返回一个effect函数,其中运行fn的时候effect会收集相关依赖(dep)并互相添加。
+ * @param options 副作用函数
+ * @param fn 副作用函数,
+ */
 export function effect<T = any>(
   fn: () => T,
   options: ReactiveEffectOptions = EMPTY_OBJ
@@ -94,8 +99,8 @@ function createReactiveEffect<T = any>(
     if (!effect.active) {
       return options.scheduler ? undefined : fn()
     }
-    if (!effectStack.includes(effect)) {
-      cleanup(effect)
+    if (!effectStack.includes(effect)) {//避免副作用函数多次执行
+      cleanup(effect)//清楚effect的依赖重新进行收集(vue2的实现中使用两个数组进行保存就的依赖和新的依赖)
       try {
         enableTracking()//确保可以进行依赖收集
         effectStack.push(effect)
@@ -109,10 +114,10 @@ function createReactiveEffect<T = any>(
     }
   } as ReactiveEffect
   effect.id = uid++
-  effect._isEffect = true
-  effect.active = true
-  effect.raw = fn
-  effect.deps = []
+  effect._isEffect = true //用于effect的判定依据
+  effect.active = true //是否可用
+  effect.raw = fn //原始副作用函数,更新时会重新运行
+  effect.deps = [] //存放依赖的响应式数据
   effect.options = options
   return effect
 }
@@ -209,6 +214,7 @@ export function trigger(
     return
   }
 
+  // 需要执行effect函数
   const effects = new Set<ReactiveEffect>()
   const add = (effectsToAdd: Set<ReactiveEffect> | undefined) => {
     if (effectsToAdd) {
@@ -219,8 +225,10 @@ export function trigger(
   if (type === TriggerOpTypes.CLEAR) {
     // collection being cleared
     // trigger all effects for target
+    // 清楚表示所有的effect都要执行
     depsMap.forEach(add)
   } else if (key === 'length' && isArray(target)) {
+    // 数组的length属性对应的dep 以及下标大于新值的值都将收集对应的effect
     depsMap.forEach((dep, key) => {
       if (key === 'length' || key >= (newValue as number)) {
         add(dep)
@@ -234,18 +242,19 @@ export function trigger(
     // also run for iteration key on ADD | DELETE | Map.SET
     const isAddOrDelete =
       type === TriggerOpTypes.ADD ||
-      (type === TriggerOpTypes.DELETE && !isArray(target))
+      (type === TriggerOpTypes.DELETE && !isArray(target))//数组的删除或触发length的处理 前面针对数组的length进行了处理
     if (
       isAddOrDelete ||
       (type === TriggerOpTypes.SET && target instanceof Map)
     ) {
-      add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY))
+      add(depsMap.get(isArray(target) ? 'length' : ITERATE_KEY)) //迭代器的改变,添加对应的effect
     }
     if (isAddOrDelete && target instanceof Map) {
       add(depsMap.get(MAP_KEY_ITERATE_KEY))
     }
   }
 
+  // TODO onTrigger,scheduler具体使用场景
   const run = (effect: ReactiveEffect) => {
     if (__DEV__ && effect.options.onTrigger) {
       effect.options.onTrigger({

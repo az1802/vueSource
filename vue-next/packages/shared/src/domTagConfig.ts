@@ -3,6 +3,7 @@
 import { makeMap } from './makeMap'
 
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element
+// html原生标签
 const HTML_TAGS =
   'html,body,base,head,link,meta,style,title,address,article,aside,footer,' +
   'header,h1,h2,h3,h4,h5,h6,hgroup,nav,section,div,dd,dl,dt,figcaption,' +
@@ -15,6 +16,7 @@ const HTML_TAGS =
   'summary,content,template,blockquote,iframe,tfoot'
 
 // https://developer.mozilla.org/en-US/docs/Web/SVG/Element
+// svg标签
 const SVG_TAGS =
   'svg,animate,animateMotion,animateTransform,circle,clipPath,color-profile,' +
   'defs,desc,discard,ellipse,feBlend,feColorMatrix,feComponentTransfer,' +
@@ -27,6 +29,7 @@ const SVG_TAGS =
   'polygon,polyline,radialGradient,rect,set,solidcolor,stop,switch,symbol,' +
   'text,textPath,title,tspan,unknown,use,view'
 
+  // 不含内容空标签
 const VOID_TAGS =
   'area,base,br,col,embed,hr,img,input,link,meta,param,source,track,wbr'
 

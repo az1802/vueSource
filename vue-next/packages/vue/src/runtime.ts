@@ -7,6 +7,7 @@ __DEV__ && initDev()
 
 export * from '@vue/runtime-dom'
 
+// runtime版本不带compile的代码,render函数需要提前编译完成
 export const compile = () => {
   if (__DEV__) {
     warn(

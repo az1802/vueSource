@@ -9,13 +9,19 @@ import { InternalRenderFunction } from 'packages/runtime-core/src/component'
 
 __DEV__ && initDev()
 
+// 缓存template字符串对应的render函数
 const compileCache: Record<string, RenderFunction> = Object.create(null)
 
+/**
+ * 模板字符串转换为render函数,并使用compileCache缓存结果
+ * @param template 模板字符串
+ * @param options 根据不同的平台和vue配置组成的options
+ */
 function compileToFunction(
   template: string | HTMLElement,
   options?: CompilerOptions
 ): RenderFunction {
-  if (!isString(template)) {
+  if (!isString(template)) { //dom节点的形式通过innerHTML获取模板字符串
     if (template.nodeType) {
       template = template.innerHTML
     } else {
@@ -30,7 +36,7 @@ function compileToFunction(
     return cached
   }
 
-  if (template[0] === '#') {
+  if (template[0] === '#') {//#开头的id选择器
     const el = document.querySelector(template)
     if (__DEV__ && !el) {
       warn(`Template element not found or is empty: ${template}`)
@@ -42,13 +48,14 @@ function compileToFunction(
     template = el ? el.innerHTML : ``
   }
 
+  // 获取render函数字符串形式
   const { code } = compile(
     template,
     extend(
       {
-        hoistStatic: true,
+        hoistStatic: true, //静态提升
         onError(err: CompilerError) {
-          if (__DEV__) {
+          if (__DEV__) {//开发环境下控制台输出compile编译错误的代码行位置
             const message = `Template compilation error: ${err.message}`
             const codeFrame =
               err.loc &&
@@ -77,6 +84,7 @@ function compileToFunction(
     : new Function('Vue', code)(runtimeDom)) as RenderFunction
 
   // mark the function as runtime compiled
+  // render函数._rc标记该render函数是运行时生成的
   ;(render as InternalRenderFunction)._rc = true
 
   return (compileCache[key] = render)

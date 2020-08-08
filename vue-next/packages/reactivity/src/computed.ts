@@ -20,6 +20,10 @@ export interface WritableComputedOptions<T> {
   set: ComputedSetter<T>
 }
 
+/**
+ * 生成一个计算属性值其类型与ref性质一样
+ * @param getter 
+ */
 export function computed<T>(getter: ComputedGetter<T>): ComputedRef<T>
 export function computed<T>(
   options: WritableComputedOptions<T>
@@ -30,6 +34,7 @@ export function computed<T>(
   let getter: ComputedGetter<T>
   let setter: ComputedSetter<T>
 
+  // get,set参数规范化处理
   if (isFunction(getterOrOptions)) {
     getter = getterOrOptions
     setter = __DEV__
@@ -47,8 +52,8 @@ export function computed<T>(
   let computed: ComputedRef<T>
 
   const runner = effect(getter, {
-    lazy: true,
-    scheduler: () => {
+    lazy: true,//计算属性的getter不会立即执行只有当render函数访问时才执行
+    scheduler: () => {  //effect运行的时候会运行scheduler此函数并不运行getter
       if (!dirty) {
         dirty = true
         trigger(computed, TriggerOpTypes.SET, 'value')
@@ -58,14 +63,14 @@ export function computed<T>(
   computed = {
     __v_isRef: true,
     [ReactiveFlags.IS_READONLY]:
-      isFunction(getterOrOptions) || !getterOrOptions.set,
+      isFunction(getterOrOptions) || !getterOrOptions.set, //没有set函数则计算属性时只读
 
     // expose effect so computed can be stopped
     effect: runner,
     get value() {
       if (dirty) {
-        value = runner()
-        dirty = false
+        value = runner() //进行依赖收集并且获取返回值
+        dirty = false //避免多次访问多次运行effect进行依赖收集
       }
       track(computed, TrackOpTypes.GET, 'value')
       return value

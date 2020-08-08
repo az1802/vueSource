@@ -10,23 +10,38 @@
     <div id="root" name="aaa">
             <button @click="addCount">add</button>
             <div>
-               {{state.count}}
+               <!-- {{state.count}} -->
+               {{newCount}}
             </div>
     </div>
     <script>
-        let {ref,createApp,reactive} = Vue;
+        let {ref,createApp,reactive,computed} = Vue;
        let vm =  createApp({
            mounted() {
                 console.log("before create");
            },
+           beforeUpdate() {
+               console.log("触发更新")
+           },
            setup(){
-            let state = reactive({count:1});
+              let state = reactive({
+                  count:1
+              })
+            let newCount = computed(()=>{
+                if(state.count==2 || state.count==3){
+                    return 3
+                }else{
+                    return state.count*2
+                }
+            })
             function addCount(){
                 state.count++;
             }
+        
                return {
                 state,
-                   addCount
+                   addCount,
+                   newCount
                }
            }
        }).mount("#root")

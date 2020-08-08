@@ -1,3 +1,4 @@
+// vnode节点的类型
 export const enum ShapeFlags {
   ELEMENT = 1,
   FUNCTIONAL_COMPONENT = 1 << 1,

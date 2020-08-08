@@ -595,6 +595,7 @@ let compile: CompileFunction | undefined
 /**
  * For runtime-dom to register the compiler.
  * Note the exported method uses any to avoid d.ts relying on the compiler types.
+ * 注册运行时的compile函数
  */
 export function registerRuntimeCompiler(_compile: any) {
   compile = _compile
@@ -632,6 +633,7 @@ function finishComponentSetup(
     // for runtime-compiled render functions using `with` blocks, the render
     // proxy used needs a different `has` handler which is more performant and
     // also only allows a whitelist of globals to fallthrough.
+    // TODO 运行环形中进行编译生成的render函数执行的时需要使用withProxy。这个上下文在has的行为上可以允许一些全局的变量进行使用
     if (instance.render._rc) {
       instance.withProxy = new Proxy(
         instance.ctx,

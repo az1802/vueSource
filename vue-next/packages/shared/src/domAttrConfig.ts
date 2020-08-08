@@ -25,7 +25,7 @@ export const isBooleanAttr = /*#__PURE__*/ makeMap(
     `checked,muted,multiple,selected`
 )
 
-const unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/
+const unsafeAttrCharRE = /[>/="'\u0009\u000a\u000c\u0020]/ //匹配”“ ” “ ”  “ 换符
 const attrValidationCache: Record<string, boolean> = {}
 
 export function isSSRSafeAttrName(name: string): boolean {
@@ -39,6 +39,7 @@ export function isSSRSafeAttrName(name: string): boolean {
   return (attrValidationCache[name] = !isUnsafe)
 }
 
+// 特殊的属性名称的别名
 export const propsToAttrMap: Record<string, string | undefined> = {
   acceptCharset: 'accept-charset',
   className: 'class',

@@ -44,6 +44,7 @@ export const isModelListener = (key: string) => key.startsWith('onUpdate:')
 
 export const extend = Object.assign
 
+// arr数组中移除el值
 export const remove = <T>(arr: T[], el: T) => {
   const i = arr.indexOf(el)
   if (i > -1) {
@@ -74,10 +75,12 @@ export const objectToString = Object.prototype.toString
 export const toTypeString = (value: unknown): string =>
   objectToString.call(value)
 
+  // 获取unknown的构造函数名称
 export const toRawType = (value: unknown): string => {
   return toTypeString(value).slice(8, -1)
 }
 
+// 判断纯碎的对象,不是[],map等。比typeof精准
 export const isPlainObject = (val: unknown): val is object =>
   toTypeString(val) === '[object Object]'
 
@@ -100,6 +103,7 @@ const cacheStringFunction = <T extends (str: string) => string>(fn: T): T => {
 const camelizeRE = /-(\w)/g
 /**
  * @private
+ * 连接符转驼峰
  */
 export const camelize = cacheStringFunction(
   (str: string): string => {
@@ -110,6 +114,7 @@ export const camelize = cacheStringFunction(
 const hyphenateRE = /\B([A-Z])/g
 /**
  * @private
+ * 驼峰转连接符
  */
 export const hyphenate = cacheStringFunction(
   (str: string): string => {
@@ -119,6 +124,7 @@ export const hyphenate = cacheStringFunction(
 
 /**
  * @private
+ * 首字符大写
  */
 export const capitalize = cacheStringFunction(
   (str: string): string => {
@@ -127,6 +133,7 @@ export const capitalize = cacheStringFunction(
 )
 
 // compare whether a value has changed, accounting for NaN.
+// 判断值两个值是否相等
 export const hasChanged = (value: any, oldValue: any): boolean =>
   value !== oldValue && (value === value || oldValue === oldValue)
 
@@ -141,6 +148,7 @@ export const invokeArrayFns = (fns: Function[], arg?: any) => {
   }
 }
 
+// 设置obj的key为value
 export const def = (obj: object, key: string | symbol, value: any) => {
   Object.defineProperty(obj, key, {
     configurable: true,
@@ -149,12 +157,14 @@ export const def = (obj: object, key: string | symbol, value: any) => {
   })
 }
 
+// val转数字,无法转换则返回val本身
 export const toNumber = (val: any): any => {
   const n = parseFloat(val)
   return isNaN(n) ? val : n
 }
 
 let _globalThis: any
+// 获取顶层的全局变量判断顺序依次是globalThis--self--window--global
 export const getGlobalThis = (): any => {
   return (
     _globalThis ||
