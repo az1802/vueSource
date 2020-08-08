@@ -5,6 +5,16 @@
 import { warn } from '@vue/runtime-core'
 
 // functions. The user is responsible for using them with only trusted content.
+/**
+ * 使用dom元素直接赋值的方式更新属性
+ * @param el dom元素
+ * @param key 属性
+ * @param value 属性值
+ * @param prevChildren 前一个子节点
+ * @param parentComponent 父组件实例
+ * @param parentSuspense 父Suspense实例
+ * @param unmountChildren 移除的子节点
+ */
 export function patchDOMProp(
   el: any,
   key: string,
@@ -27,6 +37,7 @@ export function patchDOMProp(
   if (key === 'value' && el.tagName !== 'PROGRESS') {
     // store value as _value as well since
     // non-string values will be stringified.
+    // TODO 
     el._value = value
     el.value = value == null ? '' : value
     return

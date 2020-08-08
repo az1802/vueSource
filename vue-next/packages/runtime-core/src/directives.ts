@@ -40,6 +40,7 @@ export type SSRDirectiveHook = (
   vnode: VNode
 ) => Data | undefined
 
+
 export interface ObjectDirective<T = any, V = any> {
   beforeMount?: DirectiveHook<T, null, V>
   mounted?: DirectiveHook<T, null, V>
@@ -83,7 +84,7 @@ export type DirectiveArguments = Array<
 >
 
 /**
- * Adds directives to a VNode.
+ * Adds directives to a VNode. 添加指令到vnode节点上
  */
 export function withDirectives<T extends VNode>(
   vnode: T,
@@ -116,6 +117,13 @@ export function withDirectives<T extends VNode>(
   return vnode
 }
 
+/**
+ * 更新vnode节点时候根据状态执行指令的钩子函数
+ * @param vnode 新的vnode节点
+ * @param prevVNode 旧的vnode节点
+ * @param instance 组件实例
+ * @param name (beforeMount,mounted,beforeUpdate,updated,beforeUnmount,unmounted,getSSRProps)
+ */
 export function invokeDirectiveHook(
   vnode: VNode,
   prevVNode: VNode | null,

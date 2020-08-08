@@ -10,6 +10,7 @@ import { makeMap } from './makeMap'
  * - nomodule -> noModule
  * - novalidate -> noValidate
  * - readonly -> readOnly
+ * boolean类型的属性必须移除不能赋值为"“
  */
 const specialBooleanAttrs = `itemscope,allowfullscreen,formnovalidate,ismap,nomodule,novalidate,readonly`
 export const isSpecialBooleanAttr = /*#__PURE__*/ makeMap(specialBooleanAttrs)
@@ -47,6 +48,7 @@ export const propsToAttrMap: Record<string, string | undefined> = {
 
 /**
  * CSS properties that accept plain numbers
+ * 没有单位的css属性直接赋值数字即可
  */
 export const isNoUnitNumericStyleProp = /*#__PURE__*/ makeMap(
   `animation-iteration-count,border-image-outset,border-image-slice,` +
@@ -65,6 +67,7 @@ export const isNoUnitNumericStyleProp = /*#__PURE__*/ makeMap(
  * so that we don't stringify bindings that cannot be set from HTML.
  * Don't also forget to allow `data-*` and `aria-*`!
  * Generated from https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes
+ * 已知的所有的dom属性
  */
 export const isKnownAttr = /*#__PURE__*/ makeMap(
   `accept,accept-charset,accesskey,action,align,allow,alt,async,` +

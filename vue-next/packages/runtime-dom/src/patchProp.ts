@@ -13,6 +13,18 @@ type DOMRendererOptions = RendererOptions<Node, Element>
 export const forcePatchProp: DOMRendererOptions['forcePatchProp'] = (_, key) =>
   key === 'value'
 
+/**
+ * 对dom节点属性部分进行更新,style,class会特别处理,事件监听和特殊的boolean属性单独处理,一般的属性直接更新值
+ * @param el dom节点
+ * @param key 需要更新的属性
+ * @param prevValue 属性旧值
+ * @param nextValue 属性新值
+ * @param isSVG 是否是svg标签
+ * @param prevChildren 子节点的子节点
+ * @param parentComponent 父组件实例
+ * @param parentSuspense 父级的suspense节点
+ * @param unmountChildren 
+ */
 export const patchProp: DOMRendererOptions['patchProp'] = (
   el,
   key,
@@ -34,11 +46,12 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
       break
     default:
       if (isOn(key)) {
-        // ignore v-model listeners
+        // ignore v-model listeners 忽略v-model的事件监听
         if (!isModelListener(key)) {
           patchEvent(el, key, prevValue, nextValue, parentComponent)
         }
       } else if (shouldSetAsProp(el, key, nextValue, isSVG)) {
+        // 通过操作dom节点更新属性
         patchDOMProp(
           el,
           key,
@@ -58,12 +71,20 @@ export const patchProp: DOMRendererOptions['patchProp'] = (
         } else if (key === 'false-value') {
           ;(el as any)._falseValue = nextValue
         }
+        // 使用setAttributeNS方法更新属性
         patchAttr(el, key, nextValue, isSVG)
       }
       break
   }
 }
 
+/**
+ * 是否可以通过直接通过dom不需要使用setAttributeNS进行属性更新
+ * @param el dom元素
+ * @param key 属性
+ * @param value 属性值
+ * @param isSVG 
+ */
 function shouldSetAsProp(
   el: Element,
   key: string,

@@ -31,6 +31,7 @@ if (
 
 // To avoid the overhead of repeatedly calling performance.now(), we cache
 // and use the same timestamp for all event listeners attached in the same tick.
+// TODO 待确定
 let cachedNow: number = 0
 const p = Promise.resolve()
 const reset = () => {
@@ -38,6 +39,7 @@ const reset = () => {
 }
 const getNow = () => cachedNow || (p.then(reset), (cachedNow = _getNow()))
 
+// 添加dom的事件监听
 export function addEventListener(
   el: Element,
   event: string,
@@ -47,6 +49,7 @@ export function addEventListener(
   el.addEventListener(event, handler, options)
 }
 
+// 移除dom节点事件监听
 export function removeEventListener(
   el: Element,
   event: string,
@@ -56,6 +59,14 @@ export function removeEventListener(
   el.removeEventListener(event, handler, options)
 }
 
+/**
+ * 更新dom节点上的事件,通过创建invoker函数将真正运行的函数挂载到value上这样更新事件的监听函数不需要重新监听
+ * @param el dom节点
+ * @param rawName 事件名称
+ * @param prevValue 旧值
+ * @param nextValue 新值
+ * @param instance 组件实例对象
+ */
 export function patchEvent(
   el: Element & { _vei?: Record<string, Invoker | undefined> },
   rawName: string,
@@ -67,16 +78,16 @@ export function patchEvent(
   const invokers = el._vei || (el._vei = {})
   const existingInvoker = invokers[rawName]
   if (nextValue && existingInvoker) {
-    // patch
+    // patch 直接更新内部运行的函数值
     existingInvoker.value = nextValue
   } else {
     const [name, options] = parseName(rawName)
     if (nextValue) {
-      // add
+      // add 创建一个invoker函数用于事件绑定,真正运行的函数会挂载到value上这样每次更新value值不用进行事件的解绑
       const invoker = (invokers[rawName] = createInvoker(nextValue, instance))
-      addEventListener(el, name, invoker, options)
+      addEventListener(el, name, invoker, options) //添加事件
     } else if (existingInvoker) {
-      // remove
+      // remove 移除事件监听
       removeEventListener(el, name, existingInvoker, options)
       invokers[rawName] = undefined
     }
@@ -99,6 +110,11 @@ function parseName(name: string): [string, EventListenerOptions | undefined] {
   return [name.slice(2).toLowerCase(), options]
 }
 
+/**
+ * 创建invokuer函数用于dom节点事件绑定
+ * @param initialValue 用户定义的事件监听函数
+ * @param instance 组件实例对象
+ */
 function createInvoker(
   initialValue: EventValue,
   instance: ComponentInternalInstance | null
@@ -125,6 +141,11 @@ function createInvoker(
   return invoker
 }
 
+/**
+ * 数组形式的监听函数会重写事件对象的stopImmediatePropagation方法当调用时后续的监听函数将不会再执行
+ * @param e 事件对象
+ * @param value 事件监听的函数
+ */
 function patchStopImmediatePropagation(
   e: Event,
   value: EventValue

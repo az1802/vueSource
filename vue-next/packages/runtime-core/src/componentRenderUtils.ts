@@ -37,6 +37,10 @@ export function markAttrsAccessed() {
   accessedAttrs = true
 }
 
+/**
+ * 执行组件的render方法生成子vnode节点
+ * @param instance 组件实例对象
+ */
 export function renderComponentRoot(
   instance: ComponentInternalInstance
 ): VNode {
@@ -64,11 +68,12 @@ export function renderComponentRoot(
   }
   try {
     let fallthroughAttrs
-    if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+    if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) { //组件vnode节点
       // withProxy is a proxy with a different `has` trap only for
       // runtime-compiled render functions using `with` block.
+      // TODO 运行时进行template的编译时使用withProxy,两者在has的代理行为上存在差异
       const proxyToUse = withProxy || proxy
-      result = normalizeVNode(
+      result = normalizeVNode( //执行render函数,且规范化vnode节点
         render!.call(
           proxyToUse,
           proxyToUse!,
@@ -112,12 +117,13 @@ export function renderComponentRoot(
     // attr merging
     // in dev mode, comments are preserved, and it's possible for a template
     // to have comments along side the root element which makes it a fragment
-    let root = result
+    let root = result //新的vnode根节点
     let setRoot: ((root: VNode) => void) | undefined = undefined
     if (__DEV__) {
       ;[root, setRoot] = getChildRoot(result)
     }
 
+    // 当组件配置inheritAttrs为true之后未在子组件注册的props,即使父组件传递子组件也不会显示
     if (Component.inheritAttrs !== false && fallthroughAttrs) {
       const keys = Object.keys(fallthroughAttrs)
       const { shapeFlag } = root
@@ -130,9 +136,10 @@ export function renderComponentRoot(
             // #1643, #1543
             // component v-model listeners should only fallthrough for component
             // HOCs
+            // 
             fallthroughAttrs = filterModelListeners(fallthroughAttrs)
           }
-          root = cloneVNode(root, fallthroughAttrs)
+          root = cloneVNode(root, fallthroughAttrs)//TODO 透传的属性增加到root vnode节点上 感觉这里可以优化毕竟只是增加属性并不需要重建一个vnode对象
         } else if (__DEV__ && !accessedAttrs && root.type !== Comment) {
           const allAttrs = Object.keys(attrs)
           const eventAttrs: string[] = []
@@ -232,9 +239,9 @@ const getChildRoot = (
   if (vnode.type !== Fragment) {
     return [vnode, undefined]
   }
-  const rawChildren = vnode.children as VNodeArrayChildren
-  const dynamicChildren = vnode.dynamicChildren as VNodeArrayChildren
-  const children = rawChildren.filter(child => {
+  const rawChildren = vnode.children as VNodeArrayChildren //所有的vnode节点
+  const dynamicChildren = vnode.dynamicChildren as VNodeArrayChildren //动态的vnode节点后续存在更新的部分
+  const children = rawChildren.filter(child => { //过滤注释节点
     return !(
       isVNode(child) &&
       child.type === Comment &&
@@ -244,7 +251,8 @@ const getChildRoot = (
   if (children.length !== 1) {
     return [vnode, undefined]
   }
-  const childRoot = children[0]
+  // TODO 过滤注释节点仅剩一个节点时,会将此节点设置为根vnode节点(属于一层优化)
+  const childRoot = children[0] 
   const index = rawChildren.indexOf(childRoot)
   const dynamicIndex = dynamicChildren ? dynamicChildren.indexOf(childRoot) : -1
   const setRoot = (updatedRoot: VNode) => {
@@ -268,6 +276,10 @@ const getFunctionalFallthrough = (attrs: Data): Data | undefined => {
   return res
 }
 
+/**
+ * 组件标签上传递下去的属性,过滤出onUpdate:开头的事件即v-model
+ * @param attrs 组件标签上传递下去属性
+ */
 const filterModelListeners = (attrs: Data): Data => {
   const res: Data = {}
   for (const key in attrs) {
@@ -278,6 +290,7 @@ const filterModelListeners = (attrs: Data): Data => {
   return res
 }
 
+
 const isElementRoot = (vnode: VNode) => {
   return (
     vnode.shapeFlag & ShapeFlags.COMPONENT ||
@@ -286,6 +299,13 @@ const isElementRoot = (vnode: VNode) => {
   )
 }
 
+/**
+ * 组件vnode是否应该进行更新,内部调用的方法并未对外提供接口.(react有接口可以自定义组件本次的更新)、
+ * 存在动画,指令,动态插槽,新旧属性对比存在改变,动态属性的值存在改变
+ * @param prevVNode 旧组件vnode
+ * @param nextVNode 新组件vnode
+ * @param optimized 
+ */
 export function shouldUpdateComponent(
   prevVNode: VNode,
   nextVNode: VNode,
@@ -297,11 +317,13 @@ export function shouldUpdateComponent(
   // Parent component's render function was hot-updated. Since this may have
   // caused the child component's slots content to have changed, we need to
   // force the child to update as well.
+  // 热更细时一直需要更新组件
   if (__DEV__ && (prevChildren || nextChildren) && isHmrUpdating) {
     return true
   }
 
   // force child update for runtime directive or transition on component vnode.
+  // 存在动画或指令需要更新
   if (nextVNode.dirs || nextVNode.transition) {
     return true
   }
@@ -317,8 +339,10 @@ export function shouldUpdateComponent(
         return !!nextProps
       }
       // presence of this flag indicates props are always non-null
+      // 新旧属性对比是否存在改变
       return hasPropsChanged(prevProps, nextProps!)
     } else if (patchFlag & PatchFlags.PROPS) {
+      // 动态属性的值是否存在改变
       const dynamicProps = nextVNode.dynamicProps!
       for (let i = 0; i < dynamicProps.length; i++) {
         const key = dynamicProps[i]
@@ -350,6 +374,11 @@ export function shouldUpdateComponent(
   return false
 }
 
+/**
+ * 对比新旧属性判断是否存在改变
+ * @param prevProps 旧属性
+ * @param nextProps 新属性
+ */
 function hasPropsChanged(prevProps: Data, nextProps: Data): boolean {
   const nextKeys = Object.keys(nextProps)
   if (nextKeys.length !== Object.keys(prevProps).length) {
@@ -364,6 +393,7 @@ function hasPropsChanged(prevProps: Data, nextProps: Data): boolean {
   return false
 }
 
+// 更新高阶组件的dom节点,高阶抽象组件的subTree均指向同一vnode节点
 export function updateHOCHostEl(
   { vnode, parent }: ComponentInternalInstance,
   el: typeof vnode.el // HostNode

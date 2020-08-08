@@ -27,6 +27,12 @@ export function patchStyle(el: Element, prev: Style, next: Style) {
 
 const importantRE = /\s*!important$/
 
+/**
+ * 设置style值
+ * @param style 设置stylez值
+ * @param name 样式名称
+ * @param val 样式值
+ */
 function setStyle(
   style: CSSStyleDeclaration,
   name: string,
@@ -39,7 +45,7 @@ function setStyle(
       // custom property definition
       style.setProperty(name, val)
     } else {
-      const prefixed = autoPrefix(style, name)
+      const prefixed = autoPrefix(style, name) //获取带浏览器前缀的样式名称
       if (importantRE.test(val)) {
         // !important
         style.setProperty(
@@ -57,6 +63,11 @@ function setStyle(
 const prefixes = ['Webkit', 'Moz', 'ms']
 const prefixCache: Record<string, string> = {}
 
+/**
+ * 自动的给部分样式增加浏览器前缀
+ * @param style style样式值
+ * @param rawName 原本的样式名称
+ */
 function autoPrefix(style: CSSStyleDeclaration, rawName: string): string {
   const cached = prefixCache[rawName]
   if (cached) {

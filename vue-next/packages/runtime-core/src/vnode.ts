@@ -422,6 +422,11 @@ function _createVNode(
   return vnode
 }
 
+/**
+ * 克隆一个vnode节点,对一些信息进行复用(DOM节点)
+ * @param vnode 被克隆的vnode节点
+ * @param extraProps 需要往外添加进去的属性
+ */
 export function cloneVNode<T, U>(
   vnode: VNode<T, U>,
   extraProps?: Data & VNodeProps | null
@@ -509,6 +514,14 @@ export function createCommentVNode(
     : createVNode(Comment, null, text)
 }
 
+/**
+ * 对vnode子节点进行规范化处理
+ * null,boolean --> 注释vnode节点
+ * array --> 会包裹一层Fragment
+ * object --> 存在el则复用vnode节点上的信息,否则直接返回该vnode节点
+ * string,number --> 文本vnode节点
+ * @param child 子vnode节点
+ */
 export function normalizeVNode(child: VNodeChild): VNode {
   if (child == null || typeof child === 'boolean') {
     // empty placeholder

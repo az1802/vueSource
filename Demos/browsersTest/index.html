@@ -8,24 +8,24 @@
 </head>
 <body>
     <div id="root" name="aaa">
-        <button @click="addCount">add</button>
-        <div>
-           {{count}}
-        </div>
+            <button @click="addCount">add</button>
+            <div>
+               {{state.count}}
+            </div>
     </div>
     <script>
-        let {ref,createApp} = Vue;
+        let {ref,createApp,reactive} = Vue;
        let vm =  createApp({
            mounted() {
                 console.log("before create");
            },
            setup(){
-            let count = ref(1);
+            let state = reactive({count:1});
             function addCount(){
-                count.value++;
+                state.count++;
             }
                return {
-                   count,
+                state,
                    addCount
                }
            }

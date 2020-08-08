@@ -338,6 +338,12 @@ const emptyAppContext = createAppContext()
 
 let uid = 0
 
+/**
+ * 根据组件vnode创建组件实例对象
+ * @param vnode 组件vnode节点
+ * @param parent 父组件实例
+ * @param suspense 父suspense实例
+ */
 export function createComponentInstance(
   vnode: VNode,
   parent: ComponentInternalInstance | null,

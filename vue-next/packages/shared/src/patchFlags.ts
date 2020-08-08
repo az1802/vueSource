@@ -85,17 +85,17 @@ export const enum PatchFlags {
 
 // dev only flag -> name mapping
 export const PatchFlagNames = {
-  [PatchFlags.TEXT]: `TEXT`,
-  [PatchFlags.CLASS]: `CLASS`,
-  [PatchFlags.STYLE]: `STYLE`,
-  [PatchFlags.PROPS]: `PROPS`,
-  [PatchFlags.FULL_PROPS]: `FULL_PROPS`,
-  [PatchFlags.HYDRATE_EVENTS]: `HYDRATE_EVENTS`,
-  [PatchFlags.STABLE_FRAGMENT]: `STABLE_FRAGMENT`,
+  [PatchFlags.TEXT]: `TEXT`,//动态文本
+  [PatchFlags.CLASS]: `CLASS`,//动态class
+  [PatchFlags.STYLE]: `STYLE`,//动态style
+  [PatchFlags.PROPS]: `PROPS`,//动态属性
+  [PatchFlags.FULL_PROPS]: `FULL_PROPS`,//动态属性
+  [PatchFlags.HYDRATE_EVENTS]: `HYDRATE_EVENTS`,//
+  [PatchFlags.STABLE_FRAGMENT]: `STABLE_FRAGMENT`,//fragment标签其内部节点顺序是稳定的
   [PatchFlags.KEYED_FRAGMENT]: `KEYED_FRAGMENT`,
   [PatchFlags.UNKEYED_FRAGMENT]: `UNKEYED_FRAGMENT`,
-  [PatchFlags.DYNAMIC_SLOTS]: `DYNAMIC_SLOTS`,
-  [PatchFlags.NEED_PATCH]: `NEED_PATCH`,
-  [PatchFlags.HOISTED]: `HOISTED`,
+  [PatchFlags.DYNAMIC_SLOTS]: `DYNAMIC_SLOTS`,//动态插槽
+  [PatchFlags.NEED_PATCH]: `NEED_PATCH`,//
+  [PatchFlags.HOISTED]: `HOISTED`,//静态提升(负数表示永远不需要更新)
   [PatchFlags.BAIL]: `BAIL`
 }

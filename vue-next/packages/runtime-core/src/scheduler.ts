@@ -74,6 +74,10 @@ function queueFlush() {
   }
 }
 
+/**
+ * 一般是传入组件实例的update方法,已经在队列中会进行移除
+ * @param job 待处理的任务
+ */
 export function invalidateJob(job: SchedulerJob) {
   const i = queue.indexOf(job)
   if (i > -1) {
@@ -140,6 +144,7 @@ export function flushPreFlushCbs(
   }
 }
 
+// 
 export function flushPostFlushCbs(seen?: CountMap) {
   if (pendingPostFlushCbs.length) {
     activePostFlushCbs = [...new Set(pendingPostFlushCbs)]

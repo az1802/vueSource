@@ -68,6 +68,7 @@ export function effect<T = any>(
   return effect
 }
 
+// 解除effect和其依赖的dep的联系,同时设置active为false
 export function stop(effect: ReactiveEffect) {
   if (effect.active) {
     cleanup(effect)
@@ -154,7 +155,7 @@ export function resetTracking() {
 /**
  * 当访问到响应式数据时进行effect收集.当设置对应值时就执行effect进行通知,从而完成想相关的更新操作
  * @param target 访问的对象
- * @param type 
+ * @param type tarck的触发行为('get','has','iterate')
  * @param key 对象的ke值
  */
 export function track(target: object, type: TrackOpTypes, key: unknown) {

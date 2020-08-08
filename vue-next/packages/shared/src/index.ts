@@ -81,6 +81,7 @@ export const toRawType = (value: unknown): string => {
 export const isPlainObject = (val: unknown): val is object =>
   toTypeString(val) === '[object Object]'
 
+  // vue内部使用保留的属性
 export const isReservedProp = /*#__PURE__*/ makeMap(
   'key,ref,' +
     'onVnodeBeforeMount,onVnodeMounted,' +
