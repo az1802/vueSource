@@ -58,6 +58,13 @@ export const ErrorTypeStrings: Record<number | string, string> = {
 
 export type ErrorTypes = LifecycleHooks | ErrorCodes
 
+/**
+ * 在try catch环境下执行fn函数,可以在出错时处理错误信息
+ * @param fn 执行的函数
+ * @param instance 组件实例对象
+ * @param type 错误类型
+ * @param args 执行函数所需的参数
+ */
 export function callWithErrorHandling(
   fn: Function,
   instance: ComponentInternalInstance | null,
@@ -96,6 +103,12 @@ export function callWithAsyncErrorHandling(
   return values
 }
 
+/**
+ * 
+ * @param err error对象
+ * @param instance 组件实例对象错误类型
+ * @param type 
+ */
 export function handleError(
   err: unknown,
   instance: ComponentInternalInstance | null,
@@ -108,7 +121,7 @@ export function handleError(
     const exposedInstance = instance.proxy
     // in production the hook receives only the error code
     const errorInfo = __DEV__ ? ErrorTypeStrings[type] : type
-    while (cur) {
+    while (cur) { //从父级实例对象中查看是够存在处理错误的钩子函数,存在则执行若函数返回true则跳出循环否则继续执行
       const errorCapturedHooks = cur.ec
       if (errorCapturedHooks) {
         for (let i = 0; i < errorCapturedHooks.length; i++) {
@@ -134,6 +147,12 @@ export function handleError(
   logError(err, type, contextVNode)
 }
 
+/**
+ * 输出错误信息
+ * @param err err对象
+ * @param type 错误类型
+ * @param contextVNode 
+ */
 function logError(err: unknown, type: ErrorTypes, contextVNode: VNode | null) {
   if (__DEV__) {
     const info = ErrorTypeStrings[type]

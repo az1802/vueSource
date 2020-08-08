@@ -109,6 +109,13 @@ type NormalizedProp =
 // and an array of prop keys that need value casting (booleans and defaults)
 export type NormalizedPropsOptions = [Record<string, NormalizedProp>, string[]]
 
+/**
+ * 初始化属性
+ * @param instance 组件实例
+ * @param rawProps 原始props数据
+ * @param isStateful 
+ * @param isSSR 
+ */
 export function initProps(
   instance: ComponentInternalInstance,
   rawProps: Data | null,

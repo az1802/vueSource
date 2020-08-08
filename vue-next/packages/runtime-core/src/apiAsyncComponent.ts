@@ -36,6 +36,10 @@ export interface AsyncComponentOptions<T = any> {
   ) => any
 }
 
+
+/**
+ * 定义异步组件
+ */
 export function defineAsyncComponent<
   T extends PublicAPIComponent = { new (): ComponentPublicInstance }
 >(source: AsyncComponentLoader<T> | AsyncComponentOptions<T>): T {

@@ -7,6 +7,9 @@ import {
 } from '@vue/reactivity'
 import { recordInstanceBoundEffect } from './component'
 
+/**
+ * 计算属性
+ */
 export function computed<T>(getter: ComputedGetter<T>): ComputedRef<T>
 export function computed<T>(
   options: WritableComputedOptions<T>

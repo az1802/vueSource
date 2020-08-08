@@ -72,6 +72,11 @@ export interface WatchOptions<Immediate = boolean> extends WatchOptionsBase {
 export type WatchStopHandle = () => void
 
 // Simple effect.
+/**
+ * 
+ * @param effect 副作用函数
+ * @param options TODO 待确定每个参数的具体作痛
+ */
 export function watchEffect(
   effect: WatchEffect,
   options?: WatchOptionsBase
@@ -113,6 +118,12 @@ export function watch<
 ): WatchStopHandle
 
 // implementation
+/**
+ * 监听值的变化并触发回调
+ * @param source 监听的响应式值
+ * @param cb 值发生变化时执行的回调
+ * @param options 
+ */
 export function watch<T = any>(
   source: WatchSource<T> | WatchSource<T>[],
   cb: WatchCallback<T>,
@@ -128,6 +139,14 @@ export function watch<T = any>(
   return doWatch(source, cb, options)
 }
 
+/**
+ * 监听source发生变化时触发回调
+ * TODO 需再次深度挖掘
+ * @param source 监听的来源
+ * @param cb 值变化时的回调
+ * @param param2 配置参数 
+ * @param instance 组件实例对象
+ */
 function doWatch(
   source: WatchSource | WatchSource[] | WatchEffect,
   cb: WatchCallback | null,
@@ -158,13 +177,14 @@ function doWatch(
     )
   }
 
+  // 提取各种模式的getter当执行getter的时候就回运行函数访问对应的值从而触发依赖收集
   let getter: () => any
   const isRefSource = isRef(source)
   if (isRefSource) {
     getter = () => (source as Ref).value
   } else if (isReactive(source)) {
     getter = () => source
-    deep = true
+    deep = true //响应式对象默认深度监听
   } else if (isArray(source)) {
     getter = () =>
       source.map(s => {
@@ -183,7 +203,7 @@ function doWatch(
       // getter with cb
       getter = () =>
         callWithErrorHandling(source, instance, ErrorCodes.WATCH_GETTER)
-    } else {
+    } else {//不存在回调只是简单的执行getter函数
       // no cb -> simple effect
       getter = () => {
         if (instance && instance.isUnmounted) {
@@ -268,7 +288,7 @@ function doWatch(
     scheduler = job
   } else if (flush === 'pre') {
     // ensure it's queued before component updates (which have positive ids)
-    job.id = -1
+    job.id = -1//调整job id此时这个job会被放在任务队列的最前面执行
     scheduler = () => {
       if (!instance || instance.isMounted) {
         queuePreFlushCb(job)
@@ -302,6 +322,7 @@ function doWatch(
     runner()
   }
 
+  // 返回函数停止监听
   return () => {
     stop(runner)
     if (instance) {
@@ -324,6 +345,7 @@ export function instanceWatch(
   return doWatch(getter, cb.bind(publicThis), options, this)
 }
 
+// 深度遍历value完成依赖收集
 function traverse(value: unknown, seen: Set<unknown> = new Set()) {
   if (!isObject(value) || seen.has(value)) {
     return value

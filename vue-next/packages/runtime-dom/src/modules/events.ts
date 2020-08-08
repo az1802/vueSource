@@ -96,6 +96,10 @@ export function patchEvent(
 
 const optionsModifierRE = /(?:Once|Passive|Capture)$/
 
+/**
+ * 解析整个事件指令字符串,拆解其中的(Once,Passive,Capture)
+ * @param name 事件指令的字符串
+ */
 function parseName(name: string): [string, EventListenerOptions | undefined] {
   let options: EventListenerOptions | undefined
   if (optionsModifierRE.test(name)) {

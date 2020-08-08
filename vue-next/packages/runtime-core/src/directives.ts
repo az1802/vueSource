@@ -40,7 +40,7 @@ export type SSRDirectiveHook = (
   vnode: VNode
 ) => Data | undefined
 
-
+// beforeMount,mounted,beforeUpdate,updated,beforeUnmount,unmounted
 export interface ObjectDirective<T = any, V = any> {
   beforeMount?: DirectiveHook<T, null, V>
   mounted?: DirectiveHook<T, null, V>
@@ -65,10 +65,15 @@ export type VNodeDirectiveData = [
   DirectiveModifiers
 ]
 
+// 内置指令的判断
 const isBuiltInDirective = /*#__PURE__*/ makeMap(
   'bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text'
 )
 
+/**
+ * 验证指令名称是否合法,不可以是内置指令
+ * @param name 指令名称
+ */
 export function validateDirectiveName(name: string) {
   if (isBuiltInDirective(name)) {
     warn('Do not use built-in directive ids as custom directive id: ' + name)
@@ -108,10 +113,10 @@ export function withDirectives<T extends VNode>(
     bindings.push({
       dir,
       instance,
-      value,
+      value,//指令的值
       oldValue: void 0,
-      arg,
-      modifiers
+      arg,//指令的参数
+      modifiers//指令的修饰符
     })
   }
   return vnode

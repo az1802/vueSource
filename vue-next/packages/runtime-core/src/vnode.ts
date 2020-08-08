@@ -47,6 +47,7 @@ export const Text = Symbol(__DEV__ ? 'Text' : undefined)
 export const Comment = Symbol(__DEV__ ? 'Comment' : undefined)
 export const Static = Symbol(__DEV__ ? 'Static' : undefined)
 
+
 export type VNodeTypes =
   | string
   | VNode
@@ -168,7 +169,7 @@ let currentBlock: VNode[] | null = null
  * ```
  * disableTracking is true when creating a v-for fragment block, since a v-for
  * fragment always diffs its children.
- *
+ * openBlock必须在createBlock之前调用
  * @private
  */
 export function openBlock(disableTracking = false) {
@@ -179,6 +180,7 @@ export function openBlock(disableTracking = false) {
 // Only tracks when this value is > 0
 // We are not using a simple boolean because this value may need to be
 // incremented/decremented by nested usage of v-once (see below)
+// TODO 
 let shouldTrack = 1
 
 /**
@@ -240,6 +242,9 @@ export function isVNode(value: any): value is VNode {
   return value ? value.__v_isVNode === true : false
 }
 
+/**
+ * 判读昂两个vnode节点类型是否一样,用于dom节点复用。
+ */
 export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
   if (
     __DEV__ &&
@@ -296,6 +301,16 @@ export const createVNode = (__DEV__
   ? createVNodeWithArgsTransform
   : _createVNode) as typeof _createVNode
 
+/**
+ * 创建vnode节点
+ * TODO block的作用
+ * @param type 节点类型(string,Component,Text,Static,Comment,Fragment,TeleportImpl,SuspenseImpl)
+ * @param props 属性
+ * @param children 子节点
+ * @param patchFlag patch快捷更新的标识符
+ * @param dynamicProps 动态属性
+ * @param isBlockNode 
+ */
 function _createVNode(
   type: VNodeTypes | ClassComponent | typeof NULL_DYNAMIC_COMPONENT,
   props: (Data & VNodeProps) | null = null,
@@ -304,6 +319,7 @@ function _createVNode(
   dynamicProps: string[] | null = null,
   isBlockNode = false
 ): VNode {
+  // 不合法的类型处理为注释节点
   if (!type || type === NULL_DYNAMIC_COMPONENT) {
     if (__DEV__ && !type) {
       warn(`Invalid vnode type when creating vnode: ${type}.`)
@@ -311,7 +327,7 @@ function _createVNode(
     type = Comment
   }
 
-  if (isVNode(type)) {
+  if (isVNode(type)) {//vnode节点复用
     const cloned = cloneVNode(type, props)
     if (children) {
       normalizeChildren(cloned, children)
@@ -319,12 +335,12 @@ function _createVNode(
     return cloned
   }
 
-  // class component normalization.
+  // class component normalization. 函数式组件
   if (isFunction(type) && '__vccOpts' in type) {
     type = type.__vccOpts
   }
 
-  // class & style normalization.
+  // class & style normalization. 规范化处理props中的class style统一格式
   if (props) {
     // for reactive or proxy objects, we need to clone it to enable mutation.
     if (isProxy(props) || InternalObjectKey in props) {
@@ -345,6 +361,7 @@ function _createVNode(
   }
 
   // encode the vnode type information into a bitmap
+  // 将vnode type处理为位信息便于后续使用&位运算对类型的判断
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : __FEATURE_SUSPENSE__ && isSuspense(type)
@@ -370,27 +387,27 @@ function _createVNode(
   }
 
   const vnode: VNode = {
-    __v_isVNode: true,
-    __v_skip: true,
-    type,
-    props,
-    key: props && normalizeKey(props),
-    ref: props && normalizeRef(props),
+    __v_isVNode: true, //vnode节点标识符
+    __v_skip: true,//不可以被响应式处理
+    type,//节点类型
+    props,//属性
+    key: props && normalizeKey(props),//属性中的key值
+    ref: props && normalizeRef(props),//属性中的ref
     scopeId: currentScopeId,
-    children: null,
+    children: null,//子节点
     component: null,
     suspense: null,
-    dirs: null,
+    dirs: null,//指令
     transition: null,
-    el: null,
-    anchor: null,
+    el: null,//dom节点
+    anchor: null,//锚点节点
     target: null,
     targetAnchor: null,
     staticCount: 0,
-    shapeFlag,
-    patchFlag,
-    dynamicProps,
-    dynamicChildren: null,
+    shapeFlag,//type的位信息
+    patchFlag,//快速path的标识符
+    dynamicProps,//动态属性
+    dynamicChildren: null,//动态子节点
     appContext: null
   }
 
@@ -399,7 +416,7 @@ function _createVNode(
     warn(`VNode created with invalid key (NaN). VNode type:`, vnode.type)
   }
 
-  normalizeChildren(vnode, children)
+  normalizeChildren(vnode, children)//规范化处理子节点
 
   if (
     (shouldTrack > 0 || isRenderingTemplateSlot) &&
@@ -480,6 +497,7 @@ export function cloneVNode<T, U>(
 }
 
 /**
+ * 创建文本vnode
  * @private
  */
 export function createTextVNode(text: string = ' ', flag: number = 0): VNode {
@@ -487,6 +505,8 @@ export function createTextVNode(text: string = ' ', flag: number = 0): VNode {
 }
 
 /**
+ * 创建静态vnode节点
+ * TODO numberOfNodes在hydration的作用
  * @private
  */
 export function createStaticVNode(
@@ -501,6 +521,7 @@ export function createStaticVNode(
 }
 
 /**
+ * 创建注释vnode节点
  * @private
  */
 export function createCommentVNode(
@@ -540,10 +561,15 @@ export function normalizeVNode(child: VNodeChild): VNode {
 }
 
 // optimized normalization for template-compiled render fns
+// 克隆vnode节点
 export function cloneIfMounted(child: VNode): VNode {
   return child.el === null ? child : cloneVNode(child)
 }
 
+/**
+ * 规范化处理children vnode
+ * TODO 待确定
+ */
 export function normalizeChildren(vnode: VNode, children: unknown) {
   let type = 0
   const { shapeFlag } = vnode
@@ -552,7 +578,7 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
   } else if (isArray(children)) {
     type = ShapeFlags.ARRAY_CHILDREN
   } else if (typeof children === 'object') {
-    // Normalize slot to plain children
+    // Normalize slot to plain children  处理插槽
     if (
       (shapeFlag & ShapeFlags.ELEMENT || shapeFlag & ShapeFlags.TELEPORT) &&
       (children as any).default
@@ -596,6 +622,10 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
   vnode.shapeFlag |= type
 }
 
+/**
+ * 浅拷贝合并多个props
+ * @param args 可以传入多个属性值
+ */
 export function mergeProps(...args: (Data & VNodeProps)[]) {
   const ret = extend({}, args[0])
   for (let i = 1; i < args.length; i++) {

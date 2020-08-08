@@ -84,17 +84,18 @@ export type Plugin =
       install: PluginInstallFunction
     }
 
+// 创建组件实例context,此值跟随app实例对象非全局的,之前是全局配置现在可以再每个实例app中单独配置
 export function createAppContext(): AppContext {
   return {
     app: null as any,
     config: {
-      isNativeTag: NO,
-      performance: false,
-      globalProperties: {},
-      optionMergeStrategies: {},
-      isCustomElement: NO,
-      errorHandler: undefined,
-      warnHandler: undefined
+      isNativeTag: NO, //增加原生标签
+      performance: false,//开启性能标记
+      globalProperties: {},//全局属性
+      optionMergeStrategies: {},//属性的合并策略
+      isCustomElement: NO,//自定义的dom节点
+      errorHandler: undefined,//错误的捕获处理函数
+      warnHandler: undefined//警告信息的捕获处理
     },
     mixins: [],
     components: {},
@@ -107,6 +108,7 @@ export type CreateAppFunction<HostElement> = (
   rootComponent: PublicAPIComponent,
   rootProps?: Data | null
 ) => App<HostElement>
+
 
 export function createAppAPI<HostElement>(
   render: RootRenderFunction,
@@ -123,10 +125,11 @@ export function createAppAPI<HostElement>(
 
     let isMounted = false
 
+    // 创建app实例对象
     const app: App = (context.app = {
-      _component: rootComponent as Component,
-      _props: rootProps,
-      _container: null,
+      _component: rootComponent as Component,//根组件参数信息
+      _props: rootProps,//跟组件属性
+      _container: null,//对应的dom节点
       _context: context,
 
       version,
@@ -143,7 +146,7 @@ export function createAppAPI<HostElement>(
         }
       },
 
-      use(plugin: Plugin, ...options: any[]) {
+      use(plugin: Plugin, ...options: any[]) {//安装插件
         if (installedPlugins.has(plugin)) {
           __DEV__ && warn(`Plugin has already been applied to target app.`)
         } else if (plugin && isFunction(plugin.install)) {
@@ -161,7 +164,7 @@ export function createAppAPI<HostElement>(
         return app
       },
 
-      mixin(mixin: ComponentOptions) {
+      mixin(mixin: ComponentOptions) {//mixin混入
         if (__FEATURE_OPTIONS_API__) {
           if (!context.mixins.includes(mixin)) {
             context.mixins.push(mixin)
@@ -177,9 +180,9 @@ export function createAppAPI<HostElement>(
         return app
       },
 
-      component(name: string, component?: PublicAPIComponent): any {
+      component(name: string, component?: PublicAPIComponent): any {//注册组件
         if (__DEV__) {
-          validateComponentName(name, context.config)
+          validateComponentName(name, context.config) //验证组件名
         }
         if (!component) {
           return context.components[name]
@@ -191,7 +194,7 @@ export function createAppAPI<HostElement>(
         return app
       },
 
-      directive(name: string, directive?: Directive) {
+      directive(name: string, directive?: Directive) {//注册指令
         if (__DEV__) {
           validateDirectiveName(name)
         }
@@ -208,7 +211,7 @@ export function createAppAPI<HostElement>(
 
       mount(rootContainer: HostElement, isHydrate?: boolean): any {
         if (!isMounted) {
-          const vnode = createVNode(rootComponent as Component, rootProps)
+          const vnode = createVNode(rootComponent as Component, rootProps)//创建根vnode节点
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
           vnode.appContext = context
@@ -223,10 +226,10 @@ export function createAppAPI<HostElement>(
           if (isHydrate && hydrate) {
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
-            render(vnode, rootContainer)
+            render(vnode, rootContainer) //执行render函数,完成dom树的生成及绑定
           }
           isMounted = true
-          app._container = rootContainer
+          app._container = rootContainer //实例对象挂载内部dom
           // for devtools and telemetry
           ;(rootContainer as any).__vue_app__ = app
 
@@ -247,7 +250,7 @@ export function createAppAPI<HostElement>(
 
       unmount() {
         if (isMounted) {
-          render(null, app._container)
+          render(null, app._container) //重新执行render函数进行解绑
           devtoolsUnmountApp(app)
         } else if (__DEV__) {
           warn(`Cannot unmount an app that is not mounted.`)

@@ -4,6 +4,7 @@ import { warn } from './warning'
 
 export interface InjectionKey<T> extends Symbol {}
 
+// TODO 待确定
 export function provide<T>(key: InjectionKey<T> | string, value: T) {
   if (!currentInstance) {
     if (__DEV__) {
@@ -28,6 +29,11 @@ export function provide<T>(key: InjectionKey<T> | string, value: T) {
 
 export function inject<T>(key: InjectionKey<T> | string): T | undefined
 export function inject<T>(key: InjectionKey<T> | string, defaultValue: T): T
+/**
+ * 向组件中注入值
+ * @param key 需要注入的的key值
+ * @param defaultValue 默认值
+ */
 export function inject(
   key: InjectionKey<any> | string,
   defaultValue?: unknown

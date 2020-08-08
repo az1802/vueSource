@@ -22,10 +22,12 @@ type TraceEntry = {
 
 type ComponentTraceStack = TraceEntry[]
 
+// vnode压入stack中档输出警告信息时可以以此输出组件树信息
 export function pushWarningContext(vnode: VNode) {
   stack.push(vnode)
 }
 
+// vnode节点处理完之后出栈
 export function popWarningContext() {
   stack.pop()
 }
@@ -33,9 +35,10 @@ export function popWarningContext() {
 export function warn(msg: string, ...args: any[]) {
   // avoid props formatting or warn handler tracking deps that might be mutated
   // during patch, leading to infinite recursion.
+  // 避免props格式化或者警告处理的时候产生dep收集,所以此处暂停dep收集
   pauseTracking()
 
-  const instance = stack.length ? stack[stack.length - 1].component : null
+  const instance = stack.length ? stack[stack.length - 1].component : null //当前的组件
   const appWarnHandler = instance && instance.appContext.config.warnHandler
   const trace = getComponentTrace()
 
@@ -71,6 +74,9 @@ export function warn(msg: string, ...args: any[]) {
   resetTracking()
 }
 
+/**
+ * 返回组件树
+ */
 function getComponentTrace(): ComponentTraceStack {
   let currentVNode: VNode | null = stack[stack.length - 1]
   if (!currentVNode) {

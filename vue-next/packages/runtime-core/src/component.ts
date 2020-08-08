@@ -130,6 +130,7 @@ export { ComponentOptions }
 
 type LifecycleHook = Function[] | null
 
+// 生命周期函数的简写
 export const enum LifecycleHooks {
   BEFORE_CREATE = 'bc',
   CREATED = 'c',
@@ -425,9 +426,11 @@ export function createComponentInstance(
 
 export let currentInstance: ComponentInternalInstance | null = null
 
+// 获取当是的实例对象
 export const getCurrentInstance: () => ComponentInternalInstance | null = () =>
   currentInstance || currentRenderingInstance
 
+  // 设置当前实例对象
 export const setCurrentInstance = (
   instance: ComponentInternalInstance | null
 ) => {
@@ -436,9 +439,14 @@ export const setCurrentInstance = (
 
 const isBuiltInTag = /*#__PURE__*/ makeMap('slot,component')
 
+/**
+ * 验证组件名称
+ * @param name 组件名称
+ * @param config app实例的配置
+ */
 export function validateComponentName(name: string, config: AppConfig) {
   const appIsNativeTag = config.isNativeTag || NO
-  if (isBuiltInTag(name) || appIsNativeTag(name)) {
+  if (isBuiltInTag(name) || appIsNativeTag(name)) {//非原生标签,app.config中可以自行配置。
     warn(
       'Do not use built-in or reserved HTML elements as component id: ' + name
     )
@@ -509,10 +517,12 @@ function setupStatefulComponent(
   }
   // 2. call setup()
   const { setup } = Component
-  if (setup) {
+  if (setup) {//执行setup函数,并对不同形式的结果进行处理
     const setupContext = (instance.setupContext =
       setup.length > 1 ? createSetupContext(instance) : null)
 
+    // 内部可能会注册一些生命周期函数所以需要设置当前的实例对象
+    // 执行setup函数是会访问到一些响应式的数据,此时不应该进行依赖收集
     currentInstance = instance
     pauseTracking()
     const setupResult = callWithErrorHandling(
@@ -524,7 +534,7 @@ function setupStatefulComponent(
     resetTracking()
     currentInstance = null
 
-    if (isPromise(setupResult)) {
+    if (isPromise(setupResult)) {//异步组件
       if (isSSR) {
         // return the promise so server-renderer can wait on it
         return setupResult.then((resolvedResult: unknown) => {
@@ -582,7 +592,7 @@ export function handleSetupResult(
       }`
     )
   }
-  finishComponentSetup(instance, isSSR)//对自检进行注册
+  finishComponentSetup(instance, isSSR)
 }
 
 type CompileFunction = (
@@ -601,6 +611,11 @@ export function registerRuntimeCompiler(_compile: any) {
   compile = _compile
 }
 
+/**
+ * 完成组件的初始化。
+ * @param instance 组件实例
+ * @param isSSR 
+ */
 function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean
@@ -620,8 +635,8 @@ function finishComponentSetup(
       }
       // 生成组件的render函数
       Component.render = compile(Component.template, {
-        isCustomElement: instance.appContext.config.isCustomElement,
-        delimiters: Component.delimiters
+        isCustomElement: instance.appContext.config.isCustomElement,//自定义组件
+        delimiters: Component.delimiters//自定义模板符(默认是{{}})
       })
       if (__DEV__) {
         endMeasure(instance, `compile`)
@@ -645,7 +660,7 @@ function finishComponentSetup(
   // support for 2.x options  支持vue2的options API
   if (__FEATURE_OPTIONS_API__) {
     currentInstance = instance
-    applyOptions(instance, Component)//
+    applyOptions(instance, Component)//处理组件的options
     currentInstance = null
   }
 

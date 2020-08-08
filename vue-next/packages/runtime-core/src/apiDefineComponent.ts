@@ -204,6 +204,7 @@ export function defineComponent<
   >
 
 // implementation, close to no-op
+// 规范化处理组件参数,主要是处理setup
 export function defineComponent(options: unknown) {
   return isFunction(options)
     ? { setup: options, name: options.name }
