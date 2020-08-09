@@ -12,6 +12,7 @@ import { PatchFlags, PatchFlagNames } from '@vue/shared'
 
 // Merge adjacent text nodes and expressions into a single expression
 // e.g. <div>abc {{ d }} {{ e }}</div> should have a single expression node as child.
+// 将相邻的节点合并为一个表达式
 export const transformText: NodeTransform = (node, context) => {
   if (
     node.type === NodeTypes.ROOT ||
@@ -23,7 +24,7 @@ export const transformText: NodeTransform = (node, context) => {
     // been processed.
     return () => {
       const children = node.children
-      let currentContainer: CompoundExpressionNode | undefined = undefined
+      let currentContainer: CompoundExpressionNode | undefined = undefined //用来存储合并的文本表达式
       let hasText = false
 
       for (let i = 0; i < children.length; i++) {
@@ -41,11 +42,11 @@ export const transformText: NodeTransform = (node, context) => {
                 }
               }
               // merge adjacent text node into current
-              currentContainer.children.push(` + `, next)
-              children.splice(j, 1)
+              currentContainer.children.push(` + `, next)//这里实际是改变了chilren[i]这个节点的children
+              children.splice(j, 1) //这里截取之后外层循环和内层循环的长度判定都将减1
               j--
             } else {
-              currentContainer = undefined
+              currentContainer = undefined//不能合并的子节点做处理
               break
             }
           }
@@ -67,7 +68,8 @@ export const transformText: NodeTransform = (node, context) => {
       }
 
       // pre-convert text nodes into createTextVNode(text) calls to avoid
-      // runtime normalization.
+      // runtime normalization.\
+      // TODO 待确定
       for (let i = 0; i < children.length; i++) {
         const child = children[i]
         if (isText(child) || child.type === NodeTypes.COMPOUND_EXPRESSION) {

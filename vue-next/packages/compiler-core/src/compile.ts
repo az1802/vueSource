@@ -22,6 +22,7 @@ export type TransformPreset = [
   Record<string, DirectiveTransform>
 ]
 
+//预设的指令转换
 export function getBaseTransformPreset(
   prefixIdentifiers?: boolean
 ): TransformPreset {
@@ -58,13 +59,13 @@ export function baseCompile(
   template: string | RootNode,
   options: CompilerOptions = {}
 ): CodegenResult {
-  const onError = options.onError || defaultOnError
+  const onError = options.onError || defaultOnError //处理编译错误
   const isModuleMode = options.mode === 'module'
   /* istanbul ignore if */
   if (__BROWSER__) {
     if (options.prefixIdentifiers === true) {
       onError(createCompilerError(ErrorCodes.X_PREFIX_ID_NOT_SUPPORTED))
-    } else if (isModuleMode) {
+    } else if (isModuleMode) {//浏览器不支持module形式,module用于服务端渲染
       onError(createCompilerError(ErrorCodes.X_MODULE_MODE_NOT_SUPPORTED))
     }
   }
@@ -78,19 +79,20 @@ export function baseCompile(
     onError(createCompilerError(ErrorCodes.X_SCOPE_ID_NOT_SUPPORTED))
   }
 
+  // 生成抽象语法树
   const ast = isString(template) ? baseParse(template, options) : template
-  const [nodeTransforms, directiveTransforms] = getBaseTransformPreset(
+  const [nodeTransforms, directiveTransforms] = getBaseTransformPreset(//对抽象语法树中的各个节点上的指令等内容进行解析
     prefixIdentifiers
   )
   transform(
     ast,
     extend({}, options, {
-      prefixIdentifiers,
-      nodeTransforms: [
+      prefixIdentifiers,//预设的内置转换
+      nodeTransforms: [ //节点转换
         ...nodeTransforms,
         ...(options.nodeTransforms || []) // user transforms
       ],
-      directiveTransforms: extend(
+      directiveTransforms: extend( //指令转换
         {},
         directiveTransforms,
         options.directiveTransforms || {} // user transforms
@@ -98,6 +100,7 @@ export function baseCompile(
     })
   )
 
+  // 根据抽象语法树生成render函数
   return generate(
     ast,
     extend({}, options, {

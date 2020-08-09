@@ -13,6 +13,13 @@ export function defaultOnError(error: CompilerError) {
   throw error
 }
 
+/**
+ * 创建编译错误对象
+ * @param code template字符串
+ * @param loc 位置信息
+ * @param messages 错误信息
+ * @param additionalMessage 额外的错误信息
+ */
 export function createCompilerError<T extends number>(
   code: T,
   loc?: SourceLocation,
@@ -29,6 +36,7 @@ export function createCompilerError<T extends number>(
   return error as any
 }
 
+// 编译阶段错误的类型
 export const enum ErrorCodes {
   // parse errors
   ABRUPT_CLOSING_OF_EMPTY_COMMENT,
@@ -93,26 +101,27 @@ export const enum ErrorCodes {
   __EXTEND_POINT__
 }
 
+// 编译错误类型对应的message
 export const errorMessages: { [code: number]: string } = {
   // parse errors
-  [ErrorCodes.ABRUPT_CLOSING_OF_EMPTY_COMMENT]: 'Illegal comment.',
+  [ErrorCodes.ABRUPT_CLOSING_OF_EMPTY_COMMENT]: 'Illegal comment.', //非法注释节点
   [ErrorCodes.CDATA_IN_HTML_CONTENT]:
     'CDATA section is allowed only in XML context.',
-  [ErrorCodes.DUPLICATE_ATTRIBUTE]: 'Duplicate attribute.',
-  [ErrorCodes.END_TAG_WITH_ATTRIBUTES]: 'End tag cannot have attributes.',
-  [ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS]: "Illegal '/' in tags.",
+  [ErrorCodes.DUPLICATE_ATTRIBUTE]: 'Duplicate attribute.',//重复属性
+  [ErrorCodes.END_TAG_WITH_ATTRIBUTES]: 'End tag cannot have attributes.',//闭合标签不能包含属性
+  [ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS]: "Illegal '/' in tags.",//tag中不能包含 /
   [ErrorCodes.EOF_BEFORE_TAG_NAME]: 'Unexpected EOF in tag.',
   [ErrorCodes.EOF_IN_CDATA]: 'Unexpected EOF in CDATA section.',
   [ErrorCodes.EOF_IN_COMMENT]: 'Unexpected EOF in comment.',
   [ErrorCodes.EOF_IN_SCRIPT_HTML_COMMENT_LIKE_TEXT]:
     'Unexpected EOF in script.',
   [ErrorCodes.EOF_IN_TAG]: 'Unexpected EOF in tag.',
-  [ErrorCodes.INCORRECTLY_CLOSED_COMMENT]: 'Incorrectly closed comment.',
+  [ErrorCodes.INCORRECTLY_CLOSED_COMMENT]: 'Incorrectly closed comment.', //注释节点错误闭合
   [ErrorCodes.INCORRECTLY_OPENED_COMMENT]: 'Incorrectly opened comment.',
   [ErrorCodes.INVALID_FIRST_CHARACTER_OF_TAG_NAME]:
     "Illegal tag name. Use '&lt;' to print '<'.",
   [ErrorCodes.MISSING_ATTRIBUTE_VALUE]: 'Attribute value was expected.',
-  [ErrorCodes.MISSING_END_TAG_NAME]: 'End tag name was expected.',
+  [ErrorCodes.MISSING_END_TAG_NAME]: 'End tag name was expected.', //没有对应的闭合标签
   [ErrorCodes.MISSING_WHITESPACE_BETWEEN_ATTRIBUTES]:
     'Whitespace was expected.',
   [ErrorCodes.NESTED_COMMENT]: "Unexpected '<!--' in comment.",
@@ -127,7 +136,7 @@ export const errorMessages: { [code: number]: string } = {
   [ErrorCodes.UNEXPECTED_SOLIDUS_IN_TAG]: "Illegal '/' in tags.",
 
   // Vue-specific parse errors
-  [ErrorCodes.X_INVALID_END_TAG]: 'Invalid end tag.',
+  [ErrorCodes.X_INVALID_END_TAG]: 'Invalid end tag.', //不合法的闭合标签
   [ErrorCodes.X_MISSING_END_TAG]: 'Element is missing end tag.',
   [ErrorCodes.X_MISSING_INTERPOLATION_END]:
     'Interpolation end sign was not found.',
@@ -136,12 +145,12 @@ export const errorMessages: { [code: number]: string } = {
     'Note that dynamic directive argument cannot contain spaces.',
 
   // transform errors
-  [ErrorCodes.X_V_IF_NO_EXPRESSION]: `v-if/v-else-if is missing expression.`,
-  [ErrorCodes.X_V_IF_SAME_KEY]: `v-if/else branches must use unique keys.`,
-  [ErrorCodes.X_V_ELSE_NO_ADJACENT_IF]: `v-else/v-else-if has no adjacent v-if.`,
-  [ErrorCodes.X_V_FOR_NO_EXPRESSION]: `v-for is missing expression.`,
-  [ErrorCodes.X_V_FOR_MALFORMED_EXPRESSION]: `v-for has invalid expression.`,
-  [ErrorCodes.X_V_FOR_TEMPLATE_KEY_PLACEMENT]: `<template v-for> key should be placed on the <template> tag.`,
+  [ErrorCodes.X_V_IF_NO_EXPRESSION]: `v-if/v-else-if is missing expression.`, //v-if v-else-if 缺少表达式
+  [ErrorCodes.X_V_IF_SAME_KEY]: `v-if/else branches must use unique keys.`, // v-if v-else上的两个key值不能一样
+  [ErrorCodes.X_V_ELSE_NO_ADJACENT_IF]: `v-else/v-else-if has no adjacent v-if.`,//v-else/v-else-if之前没有v-if
+  [ErrorCodes.X_V_FOR_NO_EXPRESSION]: `v-for is missing expression.`, //v-for没有表达式值
+  [ErrorCodes.X_V_FOR_MALFORMED_EXPRESSION]: `v-for has invalid expression.`, //v-for表达式不正确
+  [ErrorCodes.X_V_FOR_TEMPLATE_KEY_PLACEMENT]: `<template v-for> key should be placed on the <template> tag.`, 
   [ErrorCodes.X_V_BIND_NO_EXPRESSION]: `v-bind is missing expression.`,
   [ErrorCodes.X_V_ON_NO_EXPRESSION]: `v-on is missing expression.`,
   [ErrorCodes.X_V_SLOT_UNEXPECTED_DIRECTIVE_ON_SLOT_OUTLET]: `Unexpected custom directive on <slot> outlet.`,

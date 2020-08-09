@@ -34,6 +34,7 @@ import {
 import { injectProp, findDir, findProp } from '../utils'
 import { PatchFlags, PatchFlagNames } from '@vue/shared'
 
+// v-if指令处理
 export const transformIf = createStructuralDirectiveTransform(
   /^(if|else|else-if)$/,
   (node, dir, context) => {
@@ -41,6 +42,7 @@ export const transformIf = createStructuralDirectiveTransform(
       // #1587: We need to dynamically increment the key based on the current
       // node's sibling nodes, since chained v-if/else branches are
       // rendered at the same depth
+      // 需要俩进阶
       const siblings = context.parent!.children
       let i = siblings.indexOf(ifNode)
       let key = 0
@@ -53,7 +55,7 @@ export const transformIf = createStructuralDirectiveTransform(
 
       // Exit callback. Complete the codegenNode when all children have been
       // transformed.
-      return () => {
+      return () => { 
         if (isRoot) {
           ifNode.codegenNode = createCodegenNodeForBranch(
             branch,
@@ -109,17 +111,17 @@ export function processIf(
   }
 
   if (__DEV__ && __BROWSER__ && dir.exp) {
-    validateBrowserExpression(dir.exp as SimpleExpressionNode, context)
+    validateBrowserExpression(dir.exp as SimpleExpressionNode, context)//验证表达式能否正在运行
   }
 
-  if (dir.name === 'if') {
+  if (dir.name === 'if') {//v-if
     const branch = createIfBranch(node, dir)
     const ifNode: IfNode = {
       type: NodeTypes.IF,
       loc: node.loc,
       branches: [branch]
     }
-    context.replaceNode(ifNode)
+    context.replaceNode(ifNode) //当前节点替换为ifnode
     if (processCodegen) {
       return processCodegen(ifNode, branch, true)
     }
@@ -180,6 +182,7 @@ export function processIf(
   }
 }
 
+// 创建v-if的branch节点,后续解析的v-else v-else-if都存储在其中
 function createIfBranch(node: ElementNode, dir: DirectiveNode): IfBranchNode {
   return {
     type: NodeTypes.IF_BRANCH,
@@ -193,6 +196,7 @@ function createIfBranch(node: ElementNode, dir: DirectiveNode): IfBranchNode {
   }
 }
 
+// 创建条件表达式
 function createCodegenNodeForBranch(
   branch: IfBranchNode,
   keyIndex: number,
@@ -214,13 +218,14 @@ function createCodegenNodeForBranch(
   }
 }
 
+// 对子节点进行编码
 function createChildrenCodegenNode(
   branch: IfBranchNode,
   keyIndex: number,
   context: TransformContext
 ): BlockCodegenNode {
   const { helper } = context
-  const keyProperty = createObjectProperty(
+  const keyProperty = createObjectProperty( //创建一个key值属性
     `key`,
     createSimpleExpression(`${keyIndex}`, false)
   )
@@ -262,7 +267,7 @@ function createChildrenCodegenNode(
         // teleport has component type but isn't always tracked
         vnodeCall.tag === TELEPORT)
     ) {
-      vnodeCall.isBlock = true
+      vnodeCall.isBlock = true //block节点
       helper(OPEN_BLOCK)
       helper(CREATE_BLOCK)
     }

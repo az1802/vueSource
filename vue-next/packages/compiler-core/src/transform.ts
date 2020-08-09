@@ -107,6 +107,7 @@ export interface TransformContext extends Required<TransformOptions> {
   cache<T extends JSChildNode>(exp: T, isVNode?: boolean): CacheExpression | T
 }
 
+// 创建指令转换的上下文
 export function createTransformContext(
   root: RootNode,
   {
@@ -129,25 +130,25 @@ export function createTransformContext(
   const context: TransformContext = {
     // options
     prefixIdentifiers,
-    hoistStatic,
+    hoistStatic,//静态提升
     cacheHandlers,
-    nodeTransforms,
-    directiveTransforms,
+    nodeTransforms,//节点转换
+    directiveTransforms,//指令转换
     transformHoist,
-    isBuiltInComponent,
-    isCustomElement,
+    isBuiltInComponent,//内置组件的判断
+    isCustomElement,//自定义元素的判断这样不会当做组件处理
     expressionPlugins,
     scopeId,
     ssr,
     ssrCssVars,
     bindingMetadata,
-    onError,
+    onError,//错误的处理
 
     // state
-    root,
+    root,//ast根节点
     helpers: new Set(),
-    components: new Set(),
-    directives: new Set(),
+    components: new Set(),//注册的组件
+    directives: new Set(),//注册的指令
     hoists: [],
     imports: new Set(),
     temps: 0,
@@ -159,9 +160,9 @@ export function createTransformContext(
       vPre: 0,
       vOnce: 0
     },
-    parent: null,
+    parent: null,//父ast节点
     currentNode: root,
-    childIndex: 0,
+    childIndex: 0,//当前ast节点作为子节点序号
 
     // methods
     helper(name) {
@@ -171,7 +172,7 @@ export function createTransformContext(
     helperString(name) {
       return `_${helperNameMap[context.helper(name)]}`
     },
-    replaceNode(node) {
+    replaceNode(node) { //当前节点替换为替换传入的node
       /* istanbul ignore if */
       if (__DEV__) {
         if (!context.currentNode) {
@@ -183,7 +184,7 @@ export function createTransformContext(
       }
       context.parent!.children[context.childIndex] = context.currentNode = node
     },
-    removeNode(node) {
+    removeNode(node) { //移除ast节点
       if (__DEV__ && !context.parent) {
         throw new Error(`Cannot remove root node.`)
       }
@@ -265,6 +266,11 @@ export function createTransformContext(
   return context
 }
 
+/**
+ * 遍历ast抽象语法树处理其中的指令
+ * @param root ast语法树根节点
+ * @param options 各种指令转换的方法
+ */
 export function transform(root: RootNode, options: TransformOptions) {
   const context = createTransformContext(root, options)
   traverseNode(root, context)
@@ -325,6 +331,7 @@ function createRootCodegen(root: RootNode, context: TransformContext) {
   }
 }
 
+// 遍历子节点
 export function traverseChildren(
   parent: ParentNode,
   context: TransformContext
@@ -343,6 +350,7 @@ export function traverseChildren(
   }
 }
 
+// 遍历节点
 export function traverseNode(
   node: RootNode | TemplateChildNode,
   context: TransformContext
@@ -351,6 +359,7 @@ export function traverseNode(
   // apply transform plugins
   const { nodeTransforms } = context
   const exitFns = []
+  // 结果性的指令处理
   for (let i = 0; i < nodeTransforms.length; i++) {
     const onExit = nodeTransforms[i](node, context)
     if (onExit) {
@@ -361,11 +370,11 @@ export function traverseNode(
       }
     }
     if (!context.currentNode) {
-      // node was removed
+      // node was removed 节点被移除
       return
     } else {
-      // node may have been replaced
-      node = context.currentNode
+      // node may have been replaced 节点被替换
+      node = context.currentNode 
     }
   }
 
@@ -385,7 +394,7 @@ export function traverseNode(
       break
 
     // for container types, further traverse downwards
-    case NodeTypes.IF:
+    case NodeTypes.IF: //v-if节点会对其分支节点做递归处理
       for (let i = 0; i < node.branches.length; i++) {
         traverseNode(node.branches[i], context)
       }
@@ -398,13 +407,14 @@ export function traverseNode(
       break
   }
 
-  // exit transforms
+  // exit transforms 
   let i = exitFns.length
   while (i--) {
     exitFns[i]()
   }
 }
 
+// TODO 处理结构性的指令如v-if v-else v-else-if v-for 此处为抽象方法返回一个函数,fn为指令处理真正方法
 export function createStructuralDirectiveTransform(
   name: string | RegExp,
   fn: StructuralDirectiveTransform

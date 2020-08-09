@@ -24,6 +24,7 @@ const stripStringRE = /'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`(?:[^`\\]|\\.)*\$\{|
  * Validate a non-prefixed expression.
  * This is only called when using the in-browser runtime compiler since it
  * doesn't prefix expressions.
+ * 验证表达式是否合法。利用new Function将表达式字符串传入 验证function可否正常生成
  */
 export function validateBrowserExpression(
   node: SimpleExpressionNode,

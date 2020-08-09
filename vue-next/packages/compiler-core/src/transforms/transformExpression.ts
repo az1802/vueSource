@@ -31,8 +31,9 @@ import { walk } from 'estree-walker'
 
 const isLiteralWhitelisted = /*#__PURE__*/ makeMap('true,false,null,this')
 
+// 处理表达式
 export const transformExpression: NodeTransform = (node, context) => {
-  if (node.type === NodeTypes.INTERPOLATION) {
+  if (node.type === NodeTypes.INTERPOLATION) { //{{}} 插值的处理
     node.content = processExpression(
       node.content as SimpleExpressionNode,
       context

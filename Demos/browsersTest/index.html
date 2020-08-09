@@ -8,12 +8,13 @@
 </head>
 <body>
     <div id="root" name="aaa">
-            <button @click="addCount">add</button>
-            <div>
-               <!-- {{state.count}} -->
-               {{newCount}}
-            </div>
+        <span v-if="true">
+            true
+        </span>
+        <span v-else > false</span>
+
     </div>
+    
     <script>
         let {ref,createApp,reactive,computed} = Vue;
        let vm =  createApp({

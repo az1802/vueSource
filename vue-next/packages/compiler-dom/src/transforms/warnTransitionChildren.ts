@@ -8,6 +8,8 @@ import {
 import { TRANSITION } from '../runtimeHelpers'
 import { createDOMCompilerError, DOMErrorCodes } from '../errors'
 
+
+// 检查动画组件的内部的子节点是否合法只能有一个根节点
 export const warnTransitionChildren: NodeTransform = (node, context) => {
   if (
     node.type === NodeTypes.ELEMENT &&
@@ -33,6 +35,7 @@ export const warnTransitionChildren: NodeTransform = (node, context) => {
   }
 }
 
+// v-for默认多个子节点  v-if则会去查看v-else v-esle-if是否是多个节点的形式
 function hasMultipleChildren(node: ComponentNode | IfBranchNode): boolean {
   // #1352 filter out potential comment nodes.
   const children = (node.children = node.children.filter(

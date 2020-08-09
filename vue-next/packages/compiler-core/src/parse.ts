@@ -41,18 +41,20 @@ const decodeMap: Record<string, string> = {
   quot: '"'
 }
 
+// 默认的解析参数
 export const defaultParserOptions: MergedParserOptions = {
-  delimiters: [`{{`, `}}`],
+  delimiters: [`{{`, `}}`], //模板字符串的包裹符
   getNamespace: () => Namespaces.HTML,
   getTextMode: () => TextModes.DATA,
   isVoidTag: NO,
-  isPreTag: NO,
-  isCustomElement: NO,
-  decodeEntities: (rawText: string): string =>
+  isPreTag: NO,//是否是pre的标签即内部不做处理
+  isCustomElement: NO,//自定义元素
+  decodeEntities: (rawText: string): string => //解码实体字符
     rawText.replace(decodeRE, (_, p1) => decodeMap[p1]),
-  onError: defaultOnError
+  onError: defaultOnError //默认的错误处理
 }
 
+// TODO 待确定
 export const enum TextModes {
   //          | Elements | Entities | End sign              | Inside of
   DATA, //    | ✔        | ✔        | End tags of ancestors |
@@ -64,27 +66,33 @@ export const enum TextModes {
 
 export interface ParserContext {
   options: MergedParserOptions
-  readonly originalSource: string
-  source: string
+  readonly originalSource: string //原始的模板字符串
+  source: string //还未解析的字符串
   offset: number
-  line: number
-  column: number
-  inPre: boolean // HTML <pre> tag, preserve whitespaces
-  inVPre: boolean // v-pre, do not process directives and interpolations
+  line: number //游标的行信息
+  column: number //游标的列信息
+  inPre: boolean // HTML <pre> tag, preserve whitespaces  在pre标签内
+  inVPre: boolean // v-pre, do not process directives and interpolations  在v-pre指令下
 }
 
+/**
+ * 解析模板字符串为ast语法树
+ * @param content 模板字符串
+ * @param options 解析参数
+ */
 export function baseParse(
   content: string,
   options: ParserOptions = {}
 ): RootNode {
   const context = createParserContext(content, options)
-  const start = getCursor(context)
-  return createRoot(
+  const start = getCursor(context) //获取游标的信息
+  return createRoot(//支持组件无需一个节点作为根节点所以从parseChildren开始作为入口,此处ast根节点属于抽象节点
     parseChildren(context, TextModes.DATA, []),
     getSelection(context, start)
   )
 }
 
+// 创建解析的context包含解析过程中所需的信息
 function createParserContext(
   content: string,
   rawOptions: ParserOptions
@@ -106,36 +114,43 @@ function createParserContext(
   }
 }
 
+/**
+ * vue3可以支持组件无需根节点所以现在的入口是parseChildren返回一个ast node数组
+ * @param context 
+ * @param mode 
+ * @param ancestors 
+ */
 function parseChildren(
   context: ParserContext,
   mode: TextModes,
   ancestors: ElementNode[]
 ): TemplateChildNode[] {
-  const parent = last(ancestors)
+  const parent = last(ancestors) //父ast节点
   const ns = parent ? parent.ns : Namespaces.HTML
   const nodes: TemplateChildNode[] = []
 
-  while (!isEnd(context, mode, ancestors)) {
+  // 递归处理
+  while (!isEnd(context, mode, ancestors)) { 
     __TEST__ && assert(context.source.length > 0)
     const s = context.source
     let node: TemplateChildNode | TemplateChildNode[] | undefined = undefined
 
     if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
       if (!context.inVPre && startsWith(s, context.options.delimiters[0])) {
-        // '{{'
+        // '{{' 解析表达式中插入的文本
         node = parseInterpolation(context, mode)
-      } else if (mode === TextModes.DATA && s[0] === '<') {
+      } else if (mode === TextModes.DATA && s[0] === '<') { // <开头先处理是否是注释节点的情况,再处理开始标签的情况(与vue2类似)
         // https://html.spec.whatwg.org/multipage/parsing.html#tag-open-state
-        if (s.length === 1) {
+        if (s.length === 1) { //标签名错误
           emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 1)
-        } else if (s[1] === '!') {
+        } else if (s[1] === '!') {//注释节点
           // https://html.spec.whatwg.org/multipage/parsing.html#markup-declaration-open-state
           if (startsWith(s, '<!--')) {
             node = parseComment(context)
           } else if (startsWith(s, '<!DOCTYPE')) {
             // Ignore DOCTYPE by a limitation.
             node = parseBogusComment(context)
-          } else if (startsWith(s, '<![CDATA[')) {
+          } else if (startsWith(s, '<![CDATA[')) {//TODO XML的情形
             if (ns !== Namespaces.HTML) {
               node = parseCDATA(context, ancestors)
             } else {
@@ -146,7 +161,7 @@ function parseChildren(
             emitError(context, ErrorCodes.INCORRECTLY_OPENED_COMMENT)
             node = parseBogusComment(context)
           }
-        } else if (s[1] === '/') {
+        } else if (s[1] === '/') {//while的条件判断中已经针对</处理过 此处是非法闭合的情形
           // https://html.spec.whatwg.org/multipage/parsing.html#end-tag-open-state
           if (s.length === 2) {
             emitError(context, ErrorCodes.EOF_BEFORE_TAG_NAME, 2)
@@ -166,7 +181,7 @@ function parseChildren(
             )
             node = parseBogusComment(context)
           }
-        } else if (/[a-z]/i.test(s[1])) {
+        } else if (/[a-z]/i.test(s[1])) {//处理开始标签
           node = parseElement(context, ancestors)
         } else if (s[1] === '?') {
           emitError(
@@ -180,7 +195,7 @@ function parseChildren(
         }
       }
     }
-    if (!node) {
+    if (!node) { //表明没有表达式节点,注释节点,标签节点则当做文本进行处理
       node = parseText(context, mode)
     }
 
@@ -267,6 +282,7 @@ function pushNode(nodes: TemplateChildNode[], node: TemplateChildNode): void {
   nodes.push(node)
 }
 
+//TODO XML
 function parseCDATA(
   context: ParserContext,
   ancestors: ElementNode[]
@@ -287,6 +303,7 @@ function parseCDATA(
   return nodes
 }
 
+// 处理<!--情形的注释节点 ,返回一个ast注释节点
 function parseComment(context: ParserContext): CommentNode {
   __TEST__ && assert(startsWith(context.source, '<!--'))
 
@@ -295,7 +312,7 @@ function parseComment(context: ParserContext): CommentNode {
 
   // Regular comment.
   const match = /--(\!)?>/.exec(context.source)
-  if (!match) {
+  if (!match) { //注释节点没有结束符直接处理掉整个解析代码抛出错误
     content = context.source.slice(4)
     advanceBy(context, context.source.length)
     emitError(context, ErrorCodes.EOF_IN_COMMENT)
@@ -306,15 +323,15 @@ function parseComment(context: ParserContext): CommentNode {
     if (match[1]) {
       emitError(context, ErrorCodes.INCORRECTLY_CLOSED_COMMENT)
     }
-    content = context.source.slice(4, match.index)
+    content = context.source.slice(4, match.index) //提取注释内容
 
     // Advancing with reporting nested comments.
-    const s = context.source.slice(0, match.index)
+    const s = context.source.slice(0, match.index)//提取整个注释节点包含<!--
     let prevIndex = 1,
       nestedIndex = 0
-    while ((nestedIndex = s.indexOf('<!--', prevIndex)) !== -1) {
+    while ((nestedIndex = s.indexOf('<!--', prevIndex)) !== -1) { //注释节点嵌套的情形
       advanceBy(context, nestedIndex - prevIndex + 1)
-      if (nestedIndex + 4 < s.length) {
+      if (nestedIndex + 4 < s.length) { 
         emitError(context, ErrorCodes.NESTED_COMMENT)
       }
       prevIndex = nestedIndex + 1
@@ -329,6 +346,7 @@ function parseComment(context: ParserContext): CommentNode {
   }
 }
 
+// 处理<!DOCTYPE 情形的注释节点 ,返回一个ast注释节点
 function parseBogusComment(context: ParserContext): CommentNode | undefined {
   __TEST__ && assert(/^<(?:[\!\?]|\/[^a-z>])/i.test(context.source))
 
@@ -352,6 +370,10 @@ function parseBogusComment(context: ParserContext): CommentNode | undefined {
   }
 }
 
+/**
+ * 解析元素的开始标签
+ * parseElement内部使用parseChildren 形成递归。递归处理完整棵AST抽象语法树
+ */
 function parseElement(
   context: ParserContext,
   ancestors: ElementNode[]
@@ -362,25 +384,25 @@ function parseElement(
   const wasInPre = context.inPre
   const wasInVPre = context.inVPre
   const parent = last(ancestors)
-  const element = parseTag(context, TagType.Start, parent)
+  const element = parseTag(context, TagType.Start, parent) //处理完开始标签返回ast元素节点
   const isPreBoundary = context.inPre && !wasInPre
   const isVPreBoundary = context.inVPre && !wasInVPre
 
-  if (element.isSelfClosing || context.options.isVoidTag(element.tag)) {
+  if (element.isSelfClosing || context.options.isVoidTag(element.tag)) { //自闭和标签直接返回不需要处理子节点
     return element
   }
 
   // Children.
-  ancestors.push(element)
-  const mode = context.options.getTextMode(element, parent)
-  const children = parseChildren(context, mode, ancestors)
+  ancestors.push(element) //当前元素节点作为父节点
+  const mode = context.options.getTextMode(element, parent)//获取其处理子节点的文本模式
+  const children = parseChildren(context, mode, ancestors)//递归解析子节点
   ancestors.pop()
 
-  element.children = children
+  element.children = children //建立父子ast节点的联系
 
   // End tag.
   if (startsWithEndTagOpen(context.source, element.tag)) {
-    parseTag(context, TagType.End, parent)
+    parseTag(context, TagType.End, parent) //解析对应的结束标签
   } else {
     emitError(context, ErrorCodes.X_MISSING_END_TAG, 0, element.loc.start)
     if (context.source.length === 0 && element.tag.toLowerCase() === 'script') {
@@ -413,6 +435,7 @@ const isSpecialTemplateDirective = /*#__PURE__*/ makeMap(
 
 /**
  * Parse a tag (E.g. `<div id=a>`) with that type (start tag or end tag).
+ * 解析开始标签包含标签名及其属性部分。同时会根据tag区分ast元素节点类型为 Element Component Slot template
  */
 function parseTag(
   context: ParserContext,
@@ -427,19 +450,19 @@ function parseTag(
 
   // Tag open.
   const start = getCursor(context)
-  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source)!
-  const tag = match[1]
+  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source)! //找到结束标签</或 <  即找到此次解析的终止点
+  const tag = match[1] //提取标签名
   const ns = context.options.getNamespace(tag, parent)
 
   advanceBy(context, match[0].length)
-  advanceSpaces(context)
+  advanceSpaces(context) //处理标签属性等的空白部分
 
   // save current state in case we need to re-parse attributes with v-pre
   const cursor = getCursor(context)
   const currentSource = context.source
 
   // Attributes.
-  let props = parseAttributes(context, type)
+  let props = parseAttributes(context, type) //解析属性
 
   // check <pre> tag
   if (context.options.isPreTag(tag)) {
@@ -461,10 +484,10 @@ function parseTag(
 
   // Tag close.
   let isSelfClosing = false
-  if (context.source.length === 0) {
+  if (context.source.length === 0) { //缺失闭合标签
     emitError(context, ErrorCodes.EOF_IN_TAG)
   } else {
-    isSelfClosing = startsWith(context.source, '/>')
+    isSelfClosing = startsWith(context.source, '/>') //自闭和标签
     if (type === TagType.End && isSelfClosing) {
       emitError(context, ErrorCodes.END_TAG_WITH_TRAILING_SOLIDUS)
     }
@@ -474,12 +497,12 @@ function parseTag(
   let tagType = ElementTypes.ELEMENT
   const options = context.options
   if (!context.inVPre && !options.isCustomElement(tag)) {
-    const hasVIs = props.some(
+    const hasVIs = props.some( //动态组件指令
       p => p.type === NodeTypes.DIRECTIVE && p.name === 'is'
     )
     if (options.isNativeTag && !hasVIs) {
-      if (!options.isNativeTag(tag)) tagType = ElementTypes.COMPONENT
-    } else if (
+      if (!options.isNativeTag(tag)) tagType = ElementTypes.COMPONENT //非原生标签则元素节点为组件
+    } else if ( //内置组件 component  v-is 标记为组件节点
       hasVIs ||
       isCoreComponent(tag) ||
       (options.isBuiltInComponent && options.isBuiltInComponent(tag)) ||
@@ -489,7 +512,7 @@ function parseTag(
       tagType = ElementTypes.COMPONENT
     }
 
-    if (tag === 'slot') {
+    if (tag === 'slot') { //插槽节点
       tagType = ElementTypes.SLOT
     } else if (
       tag === 'template' &&
@@ -498,42 +521,45 @@ function parseTag(
           p.type === NodeTypes.DIRECTIVE && isSpecialTemplateDirective(p.name)
         )
       })
-    ) {
+    ) { //模板标签
       tagType = ElementTypes.TEMPLATE
     }
   }
 
   return {
     type: NodeTypes.ELEMENT,
-    ns,
-    tag,
-    tagType,
-    props,
-    isSelfClosing,
-    children: [],
-    loc: getSelection(context, start),
-    codegenNode: undefined // to be created during transform phase
+    ns,//namespace命名空间
+    tag,//标签名
+    tagType,//tag的类型
+    props,//标签上的属性
+    isSelfClosing, //自闭和标签
+    children: [],//子节点
+    loc: getSelection(context, start),//位置信息
+    codegenNode: undefined // to be created during transform phase 存放代码片段
   }
 }
 
+/**
+ * 解析开始标签上的属性部分,返回一个属性数组
+ */
 function parseAttributes(
   context: ParserContext,
   type: TagType
 ): (AttributeNode | DirectiveNode)[] {
   const props = []
   const attributeNames = new Set<string>()
-  while (
+  while (//当碰到 > , /> 结束循环
     context.source.length > 0 &&
     !startsWith(context.source, '>') &&
     !startsWith(context.source, '/>')
   ) {
-    if (startsWith(context.source, '/')) {
+    if (startsWith(context.source, '/')) { //属性中不能含有  /  字符
       emitError(context, ErrorCodes.UNEXPECTED_SOLIDUS_IN_TAG)
       advanceBy(context, 1)
       advanceSpaces(context)
       continue
     }
-    if (type === TagType.End) {
+    if (type === TagType.End) {//结束标签中不能包含属性
       emitError(context, ErrorCodes.END_TAG_WITH_ATTRIBUTES)
     }
 
@@ -550,6 +576,11 @@ function parseAttributes(
   return props
 }
 
+/**
+ * 解析单个属性,返回一个ast 属性节点.如果属性是指令属性则返回一个指令节点
+ * @param context 
+ * @param nameSet 保存结果的set集合,用于判断是否存在重复的属性名
+ */
 function parseAttribute(
   context: ParserContext,
   nameSet: Set<string>
@@ -559,9 +590,9 @@ function parseAttribute(
   // Name.
   const start = getCursor(context)
   const match = /^[^\t\r\n\f />][^\t\r\n\f />=]*/.exec(context.source)!
-  const name = match[0]
+  const name = match[0] //提取属性名称
 
-  if (nameSet.has(name)) {
+  if (nameSet.has(name)) { //存在重复属性
     emitError(context, ErrorCodes.DUPLICATE_ATTRIBUTE)
   }
   nameSet.add(name)
@@ -572,7 +603,7 @@ function parseAttribute(
   {
     const pattern = /["'<]/g
     let m: RegExpExecArray | null
-    while ((m = pattern.exec(name))) {
+    while ((m = pattern.exec(name))) { //属性名中不能出现 " ' < 这三个字符
       emitError(
         context,
         ErrorCodes.UNEXPECTED_CHARACTER_IN_ATTRIBUTE_NAME,
@@ -592,25 +623,25 @@ function parseAttribute(
       }
     | undefined = undefined
 
-  if (/^[\t\r\n\f ]*=/.test(context.source)) {
+  if (/^[\t\r\n\f ]*=/.test(context.source)) { //根据=来提取属性的值
     advanceSpaces(context)
     advanceBy(context, 1)
     advanceSpaces(context)
-    value = parseAttributeValue(context)
+    value = parseAttributeValue(context) //
     if (!value) {
       emitError(context, ErrorCodes.MISSING_ATTRIBUTE_VALUE)
     }
   }
-  const loc = getSelection(context, start)
+  const loc = getSelection(context, start) //提去位置信息
 
-  if (!context.inVPre && /^(v-|:|@|#)/.test(name)) {
+  if (!context.inVPre && /^(v-|:|@|#)/.test(name)) { //属性时指令的形式
     const match = /(?:^v-([a-z0-9-]+))?(?:(?::|^@|^#)(\[[^\]]+\]|[^\.]+))?(.+)?$/i.exec(
       name
     )!
 
     const dirName =
       match[1] ||
-      (startsWith(name, ':') ? 'bind' : startsWith(name, '@') ? 'on' : 'slot')
+      (startsWith(name, ':') ? 'bind' : startsWith(name, '@') ? 'on' : 'slot') //提取指令名称
 
     let arg: ExpressionNode | undefined
 
@@ -664,20 +695,33 @@ function parseAttribute(
       valueLoc.source = valueLoc.source.slice(1, -1)
     }
 
+    /**
+     * example v-on:click.a.c="addCount"
+     * {
+     *  ...
+     *  name:"on",
+     *  exp:{
+     *    ...
+     *    content:addCount
+     *  },
+     *  arg:{content:"click"},
+     *  modifiers:["a", "c"]
+     * }
+     */
     return {
       type: NodeTypes.DIRECTIVE,
-      name: dirName,
-      exp: value && {
+      name: dirName,//指令名称 
+      exp: value && { //指令的表达式
         type: NodeTypes.SIMPLE_EXPRESSION,
-        content: value.content,
+        content: value.content,//指令内容
         isStatic: false,
         // Treat as non-constant by default. This can be potentially set to
         // true by `transformExpression` to make it eligible for hoisting.
         isConstant: false,
         loc: value.loc
       },
-      arg,
-      modifiers: match[3] ? match[3].substr(1).split('.') : [],
+      arg,//指令参数  
+      modifiers: match[3] ? match[3].substr(1).split('.') : [], //指令修饰符
       loc
     }
   }
@@ -694,6 +738,7 @@ function parseAttribute(
   }
 }
 
+// 提取属性的值
 function parseAttributeValue(
   context: ParserContext
 ):
@@ -706,13 +751,13 @@ function parseAttributeValue(
   const start = getCursor(context)
   let content: string
 
-  const quote = context.source[0]
+  const quote = context.source[0] //第一字符查看是”,' 后续结束的地方会依此进行判断
   const isQuoted = quote === `"` || quote === `'`
   if (isQuoted) {
     // Quoted value.
     advanceBy(context, 1)
 
-    const endIndex = context.source.indexOf(quote)
+    const endIndex = context.source.indexOf(quote) //找到属性值借宿的地方
     if (endIndex === -1) {
       content = parseTextData(
         context,
@@ -723,7 +768,7 @@ function parseAttributeValue(
       content = parseTextData(context, endIndex, TextModes.ATTRIBUTE_VALUE)
       advanceBy(context, 1)
     }
-  } else {
+  } else { //没有引号直接作为文本提取然后作为属性值
     // Unquoted
     const match = /^[^\t\r\n\f >]+/.exec(context.source)
     if (!match) {
@@ -744,6 +789,9 @@ function parseAttributeValue(
   return { content, isQuoted, loc: getSelection(context, start) }
 }
 
+/**
+ * 解析{{}}中插入的文本内容,返回一个表达式节点存储表达式内容
+ */
 function parseInterpolation(
   context: ParserContext,
   mode: TextModes
@@ -757,12 +805,12 @@ function parseInterpolation(
     return undefined
   }
 
-  const start = getCursor(context)
-  advanceBy(context, open.length)
+  const start = getCursor(context) //当前游标的位置
+  advanceBy(context, open.length)//移动游标
   const innerStart = getCursor(context)
   const innerEnd = getCursor(context)
-  const rawContentLength = closeIndex - open.length
-  const rawContent = context.source.slice(0, rawContentLength)
+  const rawContentLength = closeIndex - open.length //表达式长度
+  const rawContent = context.source.slice(0, rawContentLength)//原始的表达式内容
   const preTrimContent = parseTextData(context, rawContentLength, mode)
   const content = preTrimContent.trim()
   const startOffset = preTrimContent.indexOf(content)
@@ -788,6 +836,9 @@ function parseInterpolation(
   }
 }
 
+/**
+ * 处理文本当遇到 < , }}标识符 则表示结束
+ */
 function parseText(context: ParserContext, mode: TextModes): TextNode {
   __TEST__ && assert(context.source.length > 0)
 
@@ -819,6 +870,7 @@ function parseText(context: ParserContext, mode: TextModes): TextNode {
 /**
  * Get text data with a given length from the current location.
  * This translates HTML entities in the text data.
+ * 获取文本数据
  */
 function parseTextData(
   context: ParserContext,
@@ -835,6 +887,7 @@ function parseTextData(
     return rawText
   } else {
     // DATA or RCDATA containing "&"". Entity decoding required.
+    // 对实体字符进行解码之后返回
     return context.options.decodeEntities(
       rawText,
       mode === TextModes.ATTRIBUTE_VALUE
@@ -842,11 +895,13 @@ function parseTextData(
   }
 }
 
+//获取游标的信息
 function getCursor(context: ParserContext): Position {
   const { column, line, offset } = context
   return { column, line, offset }
 }
 
+//获取context.source start与end之间的字符串内容
 function getSelection(
   context: ParserContext,
   start: Position,
@@ -864,10 +919,16 @@ function last<T>(xs: T[]): T | undefined {
   return xs[xs.length - 1]
 }
 
+// source模板字符串是否以searchString开头
 function startsWith(source: string, searchString: string): boolean {
   return source.startsWith(searchString)
 }
 
+/**
+ * 游标前进numberOfCharacters长度,表示已经处理完的长度
+ * @param context 
+ * @param numberOfCharacters 游标前进长度
+ */
 function advanceBy(context: ParserContext, numberOfCharacters: number): void {
   const { source } = context
   __TEST__ && assert(numberOfCharacters <= source.length)
@@ -875,6 +936,7 @@ function advanceBy(context: ParserContext, numberOfCharacters: number): void {
   context.source = source.slice(numberOfCharacters)
 }
 
+// 处理空白字符,直接截取跳过
 function advanceSpaces(context: ParserContext): void {
   const match = /^[\t\r\n\f ]+/.exec(context.source)
   if (match) {
@@ -894,6 +956,9 @@ function getNewPosition(
   )
 }
 
+/**
+ * 触发编译错误
+ */
 function emitError(
   context: ParserContext,
   code: ErrorCodes,
@@ -913,6 +978,12 @@ function emitError(
   )
 }
 
+/**
+ * 解析一个标签的内容部分,用于判断是否遇到了结束标签
+ * @param context 解析上下文
+ * @param mode 
+ * @param ancestors 
+ */
 function isEnd(
   context: ParserContext,
   mode: TextModes,
@@ -924,7 +995,7 @@ function isEnd(
     case TextModes.DATA:
       if (startsWith(s, '</')) {
         //TODO: probably bad performance
-        for (let i = ancestors.length - 1; i >= 0; --i) {
+        for (let i = ancestors.length - 1; i >= 0; --i) {//循环父级节点是否有对应的闭合标签
           if (startsWithEndTagOpen(s, ancestors[i].tag)) {
             return true
           }
@@ -951,6 +1022,11 @@ function isEnd(
   return !s
 }
 
+/**
+ * source开始是否是结束标签tag
+ * @param source 带解析的字符串
+ * @param tag 标签名
+ */
 function startsWithEndTagOpen(source: string, tag: string): boolean {
   return (
     startsWith(source, '</') &&

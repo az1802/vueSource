@@ -198,6 +198,7 @@ export const transformElement: NodeTransform = (node, context) => {
       }
     }
 
+    // 对缓存的内容进行编码
     node.codegenNode = createVNodeCall(
       context,
       vnodeTag,
@@ -213,6 +214,7 @@ export const transformElement: NodeTransform = (node, context) => {
   }
 }
 
+// 查找组件的名称1 动态组件 2 内置组件 3 setup返回的组件 4用户自定义组件
 export function resolveComponentType(
   node: ComponentNode,
   context: TransformContext,
@@ -220,7 +222,7 @@ export function resolveComponentType(
 ) {
   const { tag } = node
 
-  // 1. dynamic component
+  // 1. dynamic component 动态组件
   const isProp =
     node.tag === 'component' ? findProp(node, 'is') : findDir(node, 'is')
   if (isProp) {

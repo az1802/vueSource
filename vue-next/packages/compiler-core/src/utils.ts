@@ -33,12 +33,14 @@ import {
 } from './runtimeHelpers'
 import { isString, isObject, hyphenate, extend } from '@vue/shared'
 
+// 静态表达式
 export const isStaticExp = (p: JSChildNode): p is SimpleExpressionNode =>
   p.type === NodeTypes.SIMPLE_EXPRESSION && p.isStatic
 
 export const isBuiltInType = (tag: string, expected: string): boolean =>
   tag === expected || tag === hyphenate(expected)
 
+  // 判断内置的核心组件
 export function isCoreComponent(tag: string): symbol | void {
   if (isBuiltInType(tag, 'Teleport')) {
     return TELEPORT
@@ -55,6 +57,7 @@ const nonIdentifierRE = /^\d|[^\$\w]/
 export const isSimpleIdentifier = (name: string): boolean =>
   !nonIdentifierRE.test(name)
 
+// 成员表达式
 const memberExpRE = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*|\[[^\]]+\])*$/
 export const isMemberExpression = (path: string): boolean => {
   if (!path) return false
@@ -86,6 +89,12 @@ export function getInnerRange(
   return newLoc
 }
 
+/**
+ * 克隆一个位置信息对象,处理偏移量之后返回并不会修改原始的位置信息
+ * @param pos 位置信息
+ * @param source 待解析的字符串
+ * @param numberOfCharacters 前进的字符串长度
+ */
 export function advancePositionWithClone(
   pos: Position,
   source: string,
@@ -105,6 +114,7 @@ export function advancePositionWithMutation(
   source: string,
   numberOfCharacters: number = source.length
 ): Position {
+  // 计算字符中换行符的数量来获取最新位置的行数
   let linesCount = 0
   let lastNewLinePos = -1
   for (let i = 0; i < numberOfCharacters; i++) {
@@ -114,7 +124,7 @@ export function advancePositionWithMutation(
     }
   }
 
-  pos.offset += numberOfCharacters
+  pos.offset += numberOfCharacters //更新最新位置的偏移量
   pos.line += linesCount
   pos.column =
     lastNewLinePos === -1
@@ -123,7 +133,11 @@ export function advancePositionWithMutation(
 
   return pos
 }
-
+/**
+ * 断言(当assert判断为false则抛出错误信息)
+ * @param condition 判断条件   
+ * @param msg 错误信息
+ */
 export function assert(condition: boolean, msg?: string) {
   /* istanbul ignore if */
   if (!condition) {
@@ -131,6 +145,12 @@ export function assert(condition: boolean, msg?: string) {
   }
 }
 
+/**
+ * 在节点props中查找name名称的指令
+ * @param node ast节点
+ * @param name 指令名称
+ * @param allowEmpty 指令表达式是否允许为空
+ */
 export function findDir(
   node: ElementNode,
   name: string | RegExp,
@@ -148,6 +168,7 @@ export function findDir(
   }
 }
 
+// ast node中查找属性名为name的部分
 export function findProp(
   node: ElementNode,
   name: string,
@@ -175,6 +196,7 @@ export function isBindKey(arg: DirectiveNode['arg'], name: string): boolean {
   return !!(arg && isStaticExp(arg) && arg.content === name)
 }
 
+// 是否含有动态节点
 export function hasDynamicKeyVBind(node: ElementNode): boolean {
   return node.props.some(
     p =>
@@ -186,16 +208,19 @@ export function hasDynamicKeyVBind(node: ElementNode): boolean {
   )
 }
 
+// 判断文本节点
 export function isText(
   node: TemplateChildNode
 ): node is TextNode | InterpolationNode {
   return node.type === NodeTypes.INTERPOLATION || node.type === NodeTypes.TEXT
 }
 
+// 判断v-slot指令
 export function isVSlot(p: ElementNode['props'][0]): p is DirectiveNode {
   return p.type === NodeTypes.DIRECTIVE && p.name === 'slot'
 }
 
+// 判断template节点
 export function isTemplateNode(
   node: RootNode | TemplateChildNode
 ): node is TemplateNode {
@@ -204,12 +229,14 @@ export function isTemplateNode(
   )
 }
 
+// TODO 判断slot标签
 export function isSlotOutlet(
   node: RootNode | TemplateChildNode
 ): node is SlotOutletNode {
   return node.type === NodeTypes.ELEMENT && node.tagType === ElementTypes.SLOT
 }
 
+// vnode节点中注入属性
 export function injectProp(
   node: VNodeCall | RenderSlotCall,
   prop: Property,

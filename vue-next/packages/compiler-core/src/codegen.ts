@@ -81,6 +81,7 @@ export interface CodegenContext
   newline(): void
 }
 
+// 创建代码生成器上下文
 function createCodegenContext(
   ast: RootNode,
   {
@@ -96,28 +97,28 @@ function createCodegenContext(
   }: CodegenOptions
 ): CodegenContext {
   const context: CodegenContext = {
-    mode,
+    mode, //代码生成的模式默认是function (module针对ssr)
     prefixIdentifiers,
     sourceMap,
-    filename,
+    filename,//生成的文件名
     scopeId,
     optimizeImports,
-    runtimeGlobalName,
-    runtimeModuleName,
-    ssr,
-    source: ast.loc.source,
+    runtimeGlobalName,//运行时的全局模块
+    runtimeModuleName,//运行时所需的模块
+    ssr,//服务端渲染
+    source: ast.loc.source,//template字符串
     code: ``,
     column: 1,
     line: 1,
     offset: 0,
-    indentLevel: 0,
+    indentLevel: 0,//每行的缩进符
     pure: false,
     map: undefined,
     helper(key) {
       return `_${helperNameMap[key]}`
     },
     push(code, node) {
-      context.code += code
+      context.code += code //添加代码字符串
       if (!__BROWSER__ && context.map) {
         if (node) {
           let name
@@ -135,10 +136,10 @@ function createCodegenContext(
         }
       }
     },
-    indent() {
+    indent() {//添加缩进符
       newline(++context.indentLevel)
     },
-    deindent(withoutNewLine = false) {
+    deindent(withoutNewLine = false) {//回退缩进符
       if (withoutNewLine) {
         --context.indentLevel
       } else {
@@ -150,10 +151,12 @@ function createCodegenContext(
     }
   }
 
+  // 添加换行
   function newline(n: number) {
     context.push('\n' + `  `.repeat(n))
   }
 
+  // 添加code对应的templaye部分构造映射图
   function addMapping(loc: Position, name?: string) {
     context.map!.addMapping({
       name,
@@ -169,7 +172,7 @@ function createCodegenContext(
     })
   }
 
-  if (!__BROWSER__ && sourceMap) {
+  if (!__BROWSER__ && sourceMap) {//ssr渲染时会构造映射表
     // lazy require source-map implementation, only in non-browser builds
     context.map = new SourceMapGenerator()
     context.map!.setSourceContent(filename, context.source)
@@ -178,6 +181,7 @@ function createCodegenContext(
   return context
 }
 
+// ast抽象语法树转换为代码字符串
 export function generate(
   ast: RootNode,
   options: CodegenOptions & {
@@ -185,7 +189,7 @@ export function generate(
   } = {}
 ): CodegenResult {
   const context = createCodegenContext(ast, options)
-  if (options.onContextCreated) options.onContextCreated(context)
+  if (options.onContextCreated) options.onContextCreated(context) //进一步处理context
   const {
     mode,
     push,
@@ -196,22 +200,22 @@ export function generate(
     scopeId,
     ssr
   } = context
-  const hasHelpers = ast.helpers.length > 0
+  const hasHelpers = ast.helpers.length > 0 //是否需要从Vue导入的辅助方法
   const useWithBlock = !prefixIdentifiers && mode !== 'module'
   const genScopeId = !__BROWSER__ && scopeId != null && mode === 'module'
 
   // preambles
   if (!__BROWSER__ && mode === 'module') {
-    genModulePreamble(ast, context, genScopeId)
+    genModulePreamble(ast, context, genScopeId) //生成module形式的代码
   } else {
-    genFunctionPreamble(ast, context)
+    genFunctionPreamble(ast, context)//生成预备性代码(helper模块引入  静态节点的生成)
   }
 
-  // binding optimizations
+  // binding optimizations  函数参数
   const optimizeSources = options.bindingMetadata
     ? `, $props, $setup, $data, $options`
     : ``
-  // enter render function
+  // enter render function  开始构造render函数
   if (!ssr) {
     if (genScopeId) {
       push(`const render = ${PURE_ANNOTATION}_withId(`)
@@ -225,12 +229,12 @@ export function generate(
   }
   indent()
 
-  if (useWithBlock) {
+  if (useWithBlock) {//使用block需要用with包裹保证this只想_ctx
     push(`with (_ctx) {`)
     indent()
     // function mode const declarations should be inside with block
     // also they should be renamed to avoid collision with user properties
-    if (hasHelpers) {
+    if (hasHelpers) {//with包裹后需要重新加入一层导入helper模块方法
       push(
         `const { ${ast.helpers
           .map(s => `${helperNameMap[s]}: _${helperNameMap[s]}`)
@@ -242,13 +246,13 @@ export function generate(
   }
 
   // generate asset resolution statements
-  if (ast.components.length) {
+  if (ast.components.length) {//组件资源的静态提升  const _component_com = _resolveComponent("com")
     genAssets(ast.components, 'component', context)
     if (ast.directives.length || ast.temps > 0) {
       newline()
     }
   }
-  if (ast.directives.length) {
+  if (ast.directives.length) { //指令的静态提升 const _directive_a = _resolveDirective("a")
     genAssets(ast.directives, 'directive', context)
     if (ast.temps > 0) {
       newline()
@@ -265,7 +269,7 @@ export function generate(
     newline()
   }
 
-  // generate the VNode tree expression
+  // generate the VNode tree expression  开始组件树的代码生成
   if (!ssr) {
     push(`return `)
   }
@@ -295,6 +299,7 @@ export function generate(
   }
 }
 
+// 生成function形式的前沿代码
 function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
   const {
     ssr,
@@ -302,7 +307,7 @@ function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
     push,
     newline,
     runtimeModuleName,
-    runtimeGlobalName
+    runtimeGlobalName //vue全局挂载的名称
   } = context
   const VueBinding =
     !__BROWSER__ && ssr
@@ -321,21 +326,21 @@ function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
     } else {
       // "with" mode.
       // save Vue in a separate variable to avoid collision
-      push(`const _Vue = ${VueBinding}\n`)
+      push(`const _Vue = ${VueBinding}\n`) //vue全局模块的引入const _Vue = Vue
       // in "with" mode, helpers are declared inside the with block to avoid
       // has check cost, but hoists are lifted out of the function - we need
       // to provide the helper here.
-      if (ast.hoists.length) {
-        const staticHelpers = [
+      if (ast.hoists.length) { //静态提升的内容
+        const staticHelpers = [ //构造静态类容需要的方法(createVNode,createCommentVnode,createTextVNode,createStaticVNode)
           CREATE_VNODE,
           CREATE_COMMENT,
           CREATE_TEXT,
           CREATE_STATIC
         ]
-          .filter(helper => ast.helpers.includes(helper))
-          .map(aliasHelper)
+          .filter(helper => ast.helpers.includes(helper)) //过滤实现按需引用
+          .map(aliasHelper) //转换为createVNode: _createVNode形式
           .join(', ')
-        push(`const { ${staticHelpers} } = _Vue\n`)
+        push(`const { ${staticHelpers} } = _Vue\n`) //将辅助模块的方法引入const { createVNode: _createVNode, createCommentVNode: _createCommentVNode } = _Vue
       }
     }
   }
@@ -348,7 +353,7 @@ function genFunctionPreamble(ast: RootNode, context: CodegenContext) {
         .join(', ')} } = require("@vue/server-renderer")\n`
     )
   }
-  genHoists(ast.hoists, context)
+  genHoists(ast.hoists, context)//tisheng jingtai jiedian 
   newline()
   push(`return `)
 }
@@ -445,6 +450,7 @@ function genAssets(
   }
 }
 
+// 生成静态节点部分的代码
 function genHoists(hoists: (JSChildNode | null)[], context: CodegenContext) {
   if (!hoists.length) {
     return
@@ -539,6 +545,7 @@ function genNodeList(
   }
 }
 
+// 根据node节点生成代码
 function genNode(node: CodegenNode | symbol | string, context: CodegenContext) {
   if (isString(node)) {
     context.push(node)
@@ -551,7 +558,7 @@ function genNode(node: CodegenNode | symbol | string, context: CodegenContext) {
   switch (node.type) {
     case NodeTypes.ELEMENT:
     case NodeTypes.IF:
-    case NodeTypes.FOR:
+    case NodeTypes.FOR: //普通元素或者结构性指令
       __DEV__ &&
         assert(
           node.codegenNode != null,
@@ -655,6 +662,7 @@ function genInterpolation(node: InterpolationNode, context: CodegenContext) {
   push(`)`)
 }
 
+// 复合表达式
 function genCompoundExpression(
   node: CompoundExpressionNode,
   context: CodegenContext
@@ -674,7 +682,7 @@ function genExpressionAsPropertyKey(
   context: CodegenContext
 ) {
   const { push } = context
-  if (node.type === NodeTypes.COMPOUND_EXPRESSION) {
+  if (node.type === NodeTypes.COMPOUND_EXPRESSION) { //付个表达式
     push(`[`)
     genCompoundExpression(node, context)
     push(`]`)
@@ -682,7 +690,7 @@ function genExpressionAsPropertyKey(
     // only quote keys if necessary
     const text = isSimpleIdentifier(node.content)
       ? node.content
-      : JSON.stringify(node.content)
+      : JSON.stringify(node.content) //添加“”表示字符串常量
     push(text, node)
   } else {
     push(`[${node.content}]`, node)
@@ -756,6 +764,7 @@ function genCallExpression(node: CallExpression, context: CodegenContext) {
   push(`)`)
 }
 
+// 对象表达式的表达式
 function genObjectExpression(node: ObjectExpression, context: CodegenContext) {
   const { push, indent, deindent, newline } = context
   const { properties } = node
@@ -771,12 +780,12 @@ function genObjectExpression(node: ObjectExpression, context: CodegenContext) {
   multilines && indent()
   for (let i = 0; i < properties.length; i++) {
     const { key, value } = properties[i]
-    // key
+    // key 生成对象的key值部分
     genExpressionAsPropertyKey(key, context)
     push(`: `)
-    // value
-    genNode(value, context)
-    if (i < properties.length - 1) {
+    // value生成对象的value值部分
+    genNode(value, context) //只可能是多种类型所以使用genNode
+    if (i < properties.length - 1) { //换行添加下一个字符
       // will only reach this if it's multilines
       push(`,`)
       newline()

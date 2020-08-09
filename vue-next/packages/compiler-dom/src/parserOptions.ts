@@ -86,12 +86,13 @@ export const parserOptions: ParserOptions = {
   },
 
   // https://html.spec.whatwg.org/multipage/parsing.html#parsing-html-fragments
+  // 根据tag标签名来判断其子节点的解析模式,textarea title标签的内容会处理为其值。style,iframe,script,noscript 其子节点处理为纯文本内容
   getTextMode({ tag, ns }: ElementNode): TextModes {
     if (ns === DOMNamespaces.HTML) {
       if (tag === 'textarea' || tag === 'title') {
         return TextModes.RCDATA
       }
-      if (isRawTextContainer(tag)) {
+      if (isRawTextContainer(tag)) {//内容解析为全文本
         return TextModes.RAWTEXT
       }
     }
