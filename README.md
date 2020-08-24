@@ -6,17 +6,18 @@
 
 ### vue2源码注解
 [vue2的源码注解](https://github.com/az1802/vueSource/tree/master/Vue2/src)
-compiler-----------------template字符串转换为render函数
-core---------------------核心功能(内置组件,全局API,构造组件实例,数据响应式)
-&emsp;component-----------内置组件
-&emsp;global-api-------------全局API
-&emsp;instance---------------造组件实例
-&emsp;observer---------------数据响应式处理
-&emsp;util---------------------工具方法
-&emsp;vdom------------------虚拟dom相关的方法
-platforms----------------平台相关的节点操作方法(通过函数柯里化将不同的操作通过参数传入核心方法)
-sfc-----------------------vue单文件的处理
-shared-------------------不同平台公用的工具方法
+
+compiler-----------------template字符串转换为render函数<br>
+core---------------------核心功能(内置组件,全局API,构造组件实例,数据响应式)<br>
+&emsp;component-----------内置组件<br>
+&emsp;global-api-------------全局API<br>
+&emsp;instance---------------造组件实例<br>
+&emsp;observer---------------数据响应式处理<br>
+&emsp;util---------------------工具方法<br>
+&emsp;vdom------------------虚拟dom相关的方法<br>
+platforms----------------平台相关的节点操作方法(通过函数柯里化将不同的操作通过参数传入核心方法)<br>
+sfc-----------------------vue单文件的处理<br>
+shared-------------------不同平台公用的工具方法<br>
 
 ### vue3源码注解
 vue3中将不同的功能(编译,数据响应式等独立为单独的包)使用lerna来管理多package项目。
@@ -37,5 +38,5 @@ vue-----------------------------主要入口
 
 
 ### 辅助工具
-正则表达式解析工具[https://regexper.com/]
-vue3模板解析[https://vue-next-template-explorer.netlify.app/]
+[正则表达式解析工具](https://regexper.com/)
+[vue3模板解析](https://vue-next-template-explorer.netlify.app/)
