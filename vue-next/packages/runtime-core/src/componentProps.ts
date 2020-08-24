@@ -110,7 +110,7 @@ type NormalizedProp =
 export type NormalizedPropsOptions = [Record<string, NormalizedProp>, string[]]
 
 /**
- * 初始化属性
+ * 根据组件props配置信息处理传入的属性数据
  * @param instance 组件实例
  * @param rawProps 原始props数据
  * @param isStateful 
@@ -146,6 +146,13 @@ export function initProps(
   instance.attrs = attrs
 }
 
+/**
+ * 组件更新过程中处理传入的props值
+ * @param instance 组件实例
+ * @param rawProps 新的props值
+ * @param rawPrevProps 就的props值
+ * @param optimized 
+ */
 export function updateProps(
   instance: ComponentInternalInstance,
   rawProps: Data | null,
@@ -188,7 +195,7 @@ export function updateProps(
         }
       }
     }
-  } else {
+  } else { //全量属性更新
     // full props update.
     setFullProps(instance, rawProps, props, attrs)
     // in case of dynamic props, check if we need to delete keys from
@@ -242,6 +249,13 @@ export function updateProps(
   }
 }
 
+/**
+ * 处理组件标签上的属性部分,分别存放到props attrs
+ * @param instance 组件实例对象
+ * @param rawProps 所有组件标签上的属性
+ * @param props 存储组件中配置了props的key
+ * @param attrs 存储没有在组件参数props配置的key且非事件属性
+ */
 function setFullProps(
   instance: ComponentInternalInstance,
   rawProps: Data | null,
@@ -258,6 +272,7 @@ function setFullProps(
       }
       // prop option names are camelized during normalization, so to support
       // kebab -> camel conversion here we need to camelize the key.
+      // 没有在props配置参数中的key且非事件属性将作为attrs保存
       let camelKey
       if (options && hasOwn(options, (camelKey = camelize(key)))) {
         props[camelKey] = value
@@ -284,6 +299,13 @@ function setFullProps(
   }
 }
 
+/**
+ * 根据props的配置 处理默认值和需要转换为boolean值类型的情况
+ * @param options 规范化处理props后的值
+ * @param props 
+ * @param key 
+ * @param value 
+ */
 function resolvePropValue(
   options: NormalizedPropsOptions[0],
   props: Data,
@@ -316,6 +338,10 @@ function resolvePropValue(
   return value
 }
 
+/**
+ * 规范化处理组件参数中的props
+ * @param comp 组件的配置参数
+ */
 export function normalizePropsOptions(
   comp: Component
 ): NormalizedPropsOptions | [] {
@@ -349,6 +375,8 @@ export function normalizePropsOptions(
     return (comp.__props = EMPTY_ARR)
   }
 
+  // 处理props配置为数组和对象的两种形式,会将连接符形式的key转换为驼峰。
+  // 对象形式的props会对值类型进行相关的验证。最终都将转换为一个大对象的形式
   if (isArray(raw)) {
     for (let i = 0; i < raw.length; i++) {
       if (__DEV__ && !isString(raw[i])) {
@@ -417,6 +445,7 @@ function getTypeIndex(
 
 /**
  * dev only
+ * 验证属性type是否符合预期
  */
 function validateProps(props: Data, comp: Component) {
   const rawValues = toRaw(props)
@@ -429,6 +458,7 @@ function validateProps(props: Data, comp: Component) {
 }
 
 /**
+ * 验证props参数的名称是否合法,prop不可以是$开头
  * dev only
  */
 function validatePropName(key: string) {
@@ -441,6 +471,7 @@ function validatePropName(key: string) {
 }
 
 /**
+ * 验证属性的值是否符合required type  validator这些规则 
  * dev only
  */
 function validateProp(

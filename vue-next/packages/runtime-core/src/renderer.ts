@@ -295,6 +295,7 @@ export const setRef = (
   vnode: VNode | null
 ) => {
   let value: ComponentPublicInstance | RendererNode | null
+  // 记录ref对应的组件实例或者dom节点
   if (!vnode) {
     value = null
   } else {
@@ -1272,6 +1273,7 @@ function baseCreateRenderer(
 
     // setup() is async. This component relies on async logic to be resolved
     // before proceeding
+    // 异步setup函数外层需要suspense组件边界,同时会先创建一个注释vnode进行占位后续再进行替换
     if (__FEATURE_SUSPENSE__ && instance.asyncDep) {
       if (!parentSuspense) {    // 异步组件应该被SUSPENSE组件包裹
         if (__DEV__) warn('async setup() is used without a suspense boundary!')
@@ -2037,7 +2039,17 @@ function baseCreateRenderer(
     }
   }
 
-  // vnode节点解除绑定
+  /**
+   * vnode节点解除绑定
+   * 1 解除ref的相关引用 
+   * 2 keep-alive则触发deactivate钩子函数 
+   * 3 组件通过unmountComponent方法,普通元素存在指令则会执行指令相关的钩子函数
+   * 
+   * @param vnode 
+   * @param parentComponent 
+   * @param parentSuspense 
+   * @param doRemove 
+   */
   const unmount: UnmountFn = (
     vnode,
     parentComponent,
@@ -2054,7 +2066,7 @@ function baseCreateRenderer(
       patchFlag,
       dirs
     } = vnode
-    // unset ref
+    // unset ref   解除ref的引用
     if (ref != null && parentComponent) {
       setRef(ref, null, parentComponent, parentSuspense, null)
     }
@@ -2067,19 +2079,19 @@ function baseCreateRenderer(
     const shouldInvokeDirs = shapeFlag & ShapeFlags.ELEMENT && dirs
 
     let vnodeHook: VNodeHook | undefined | null
-    if ((vnodeHook = props && props.onVnodeBeforeUnmount)) {
+    if ((vnodeHook = props && props.onVnodeBeforeUnmount)) {//触发beforeUnmount钩子函数
       invokeVNodeHook(vnodeHook, parentComponent, vnode)
     }
 
-    if (shapeFlag & ShapeFlags.COMPONENT) {
+    if (shapeFlag & ShapeFlags.COMPONENT) { //组件解除绑定
       unmountComponent(vnode.component!, parentSuspense, doRemove)
-    } else {
+    } else {//dom节点解除绑定 
       if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
         vnode.suspense!.unmount(parentSuspense, doRemove)
         return
       }
 
-      // 指令的 beforeUnmount钩子函数执行
+      // 指令beforeUnmount钩子函数执行
       if (shouldInvokeDirs) {
         invokeDirectiveHook(vnode, null, parentComponent, 'beforeUnmount')
       }
@@ -2172,7 +2184,10 @@ function baseCreateRenderer(
   }
 
   /**
-   * 组件的解除绑定
+   * 组件的解除绑定。
+   * 触发beforeUnmount unmounted钩子函数
+   * 停止effects的监听
+   * 递归调用unmount对子节点进行解除绑定
    * @param instance 组件实例对象
    * @param parentSuspense 父suspense实例对象
    * @param doRemove 是否移除dom

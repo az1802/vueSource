@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="vue.global.js"></script>
+</head>
+
+<body>
+    <div id="root" name="aaa">
+        <p>{{count}}</p>
+        <button @click="addCount">add</button>
+    </div>
+
+    <script>
+        let {
+            ref,
+            createApp,
+            reactive,
+            computed,
+            toRefs
+        } = Vue;
+        const app = createApp({
+            data(){
+                return {
+                    count:1
+                }
+            },
+            setup() {
+                // let state = reactive({
+                //     count: 1
+                // })
+                let count = 1;
+                let newCount = computed(() => {
+                    if (state.count == 2 || state.count == 3) {
+                        return 3
+                    } else {
+                        return state.count * 2
+                    }
+                })
+
+                function addCount() {
+                    // state.count++;
+                    count++
+                    console.log(count);
+                }
+
+                return {
+                    // ...toRefs(state),
+                    // count,
+                    addCount,
+                    newCount
+                }
+            }
+        })
+        app.mount("#root")
+    </script>
+</body>
+
+</html>

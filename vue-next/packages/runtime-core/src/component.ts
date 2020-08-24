@@ -490,6 +490,7 @@ function setupStatefulComponent(
 ) {
   const Component = instance.type as ComponentOptions
 
+  // 验证组件options中的name.components,directives是否合法
   if (__DEV__) {
     if (Component.name) {
       validateComponentName(Component.name, instance.appContext.config)
@@ -518,6 +519,7 @@ function setupStatefulComponent(
   // 2. call setup()
   const { setup } = Component
   if (setup) {//执行setup函数,并对不同形式的结果进行处理
+    // 根据setuo函数参数判断是否需要context,可以节省部分性能
     const setupContext = (instance.setupContext =
       setup.length > 1 ? createSetupContext(instance) : null)
 
@@ -612,7 +614,7 @@ export function registerRuntimeCompiler(_compile: any) {
 }
 
 /**
- * 完成组件的初始化。
+ * 完成组件的初始化。这里会执行compile将template字符串转换为render函数,同时处理options
  * @param instance 组件实例
  * @param isSSR 
  */

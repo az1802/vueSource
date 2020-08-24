@@ -444,6 +444,7 @@ export function createRenderContext(instance: ComponentInternalInstance) {
 }
 
 // dev only
+// 将传入组件的props值挂载到ctx上
 export function exposePropsOnRenderContext(
   instance: ComponentInternalInstance
 ) {
@@ -461,6 +462,7 @@ export function exposePropsOnRenderContext(
   }
 }
 
+// 将setup函数运行返回的对象的key挂载到ctx上,便于render函数使用时直接获取
 // dev only
 export function exposeSetupStateOnRenderContext(
   instance: ComponentInternalInstance

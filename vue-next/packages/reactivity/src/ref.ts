@@ -80,6 +80,7 @@ export function unref<T>(ref: T): T extends Ref<infer V> ? V : T {
   return isRef(ref) ? (ref.value as any) : ref
 }
 
+// 针对ref的值会进行一次外层解除这样在运行render函数的时候就可以直接拿到内部的值
 const shallowUnwrapHandlers: ProxyHandler<any> = {
   get: (target, key, receiver) => unref(Reflect.get(target, key, receiver)),
   set: (target, key, value, receiver) => {
@@ -93,7 +94,7 @@ const shallowUnwrapHandlers: ProxyHandler<any> = {
   }
 }
 
-// TODO 代理ref的值
+//通过一层代理可以直接拿到对象内部ref类型的值
 export function proxyRefs<T extends object>(
   objectWithRefs: T
 ): ShallowUnwrapRef<T> {

@@ -351,6 +351,7 @@ const enum OptionTypes {
   INJECT = 'Inject'
 }
 
+// 返回函数用于检测是否存在重复属性
 function createDuplicateChecker() {
   const cache = Object.create(null)
   return (type: OptionTypes, key: string) => {
@@ -367,7 +368,11 @@ type DataFn = (vm: ComponentPublicInstance) => any
 export let isInBeforeCreate = false
 
 /**
- * 处理组件的options
+ * 处理组件的options。
+ * 先处理global mixin 再处理extend混入,自身mixins混入。
+ * options初始化的顺序与vue2保持一致(inject methods data computed watch)处理这些值并挂载到ctx上,执行render函数时可以找到。
+ * 同时处理过程中均采用vue3新的函数(inject,computed,createWatcher,provide)进行处理
+ * 内部会触发beforeCreate created钩子函数。针对beforeMount等其他钩子函数均采用onBeforeMount函数形式进行注入
  * @param instance 组件实例对象
  * @param options 组件的options参数
  * @param deferredData 
@@ -453,6 +458,9 @@ export function applyOptions(
   // - computed
   // - watch (deferred since it relies on `this` access)
  
+  // ["a","b"]数组形式   
+  // { a: { from: "b",default: "aa" } } 注入的值key为a。from表示provide对应的key default表示默认值。
+  // {a:"b"}  注入的值key为a。b为provide对应的key 
   if (injectOptions) {
     if (isArray(injectOptions)) {
       for (let i = 0; i < injectOptions.length; i++) {
@@ -494,6 +502,7 @@ export function applyOptions(
     }
   }
 
+  // 处理data并且合并来自混入的data,这里还不会将数据响应式化
   if (dataOptions) {
     if (__DEV__ && !isFunction(dataOptions)) {
       warn(
@@ -677,6 +686,12 @@ function applyMixins(
   }
 }
 
+/**
+ * 
+ * @param instance 组件实例对象
+ * @param dataFn data function生成data数据
+ * @param publicThis 
+ */
 function resolveData(
   instance: ComponentInternalInstance,
   dataFn: DataFn,
@@ -692,7 +707,7 @@ function resolveData(
   }
   if (!isObject(data)) {
     __DEV__ && warn(`data() should return an object.`)
-  } else if (instance.data === EMPTY_OBJ) {
+  } else if (instance.data === EMPTY_OBJ) {//data function返回的数据变为响应式
     instance.data = reactive(data)
   } else {
     // existing data: this is a mixin or extends.

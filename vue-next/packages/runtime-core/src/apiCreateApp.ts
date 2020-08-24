@@ -81,8 +81,8 @@ type PluginInstallFunction = (app: App, ...options: any[]) => any
 export type Plugin =
   | PluginInstallFunction & { install?: PluginInstallFunction }
   | {
-      install: PluginInstallFunction
-    }
+    install: PluginInstallFunction
+  }
 
 // 创建组件实例context,此值跟随app实例对象非全局的,之前是全局配置现在可以再每个实例app中单独配置
 export function createAppContext(): AppContext {
@@ -109,7 +109,12 @@ export type CreateAppFunction<HostElement> = (
   rootProps?: Data | null
 ) => App<HostElement>
 
-
+/**
+ * 创建createApp函数。
+ * createApp函数内部使用installedPlugins存储安装的插件。此函数返回一个对象(包含use,mount,unmount等方法)
+ * @param render 
+ * @param hydrate 
+ */
 export function createAppAPI<HostElement>(
   render: RootRenderFunction,
   hydrate?: RootHydrateFunction
@@ -128,7 +133,7 @@ export function createAppAPI<HostElement>(
     // 创建app实例对象
     const app: App = (context.app = {
       _component: rootComponent as Component,//根组件参数信息
-      _props: rootProps,//跟组件属性
+      _props: rootProps,//根组件属性
       _container: null,//对应的dom节点
       _context: context,
 
@@ -158,7 +163,7 @@ export function createAppAPI<HostElement>(
         } else if (__DEV__) {
           warn(
             `A plugin must either be a function or an object with an "install" ` +
-              `function.`
+            `function.`
           )
         }
         return app
@@ -171,7 +176,7 @@ export function createAppAPI<HostElement>(
           } else if (__DEV__) {
             warn(
               'Mixin has already been applied to target app' +
-                (mixin.name ? `: ${mixin.name}` : '')
+              (mixin.name ? `: ${mixin.name}` : '')
             )
           }
         } else if (__DEV__) {
@@ -194,7 +199,7 @@ export function createAppAPI<HostElement>(
         return app
       },
 
-      directive(name: string, directive?: Directive) {//注册指令
+      directive(name: string, directive?: Directive) {//注册指令,不存在第二个参数时则是获取指令操作
         if (__DEV__) {
           validateDirectiveName(name)
         }
@@ -230,8 +235,8 @@ export function createAppAPI<HostElement>(
           }
           isMounted = true
           app._container = rootContainer //实例对象挂载内部dom
-          // for devtools and telemetry
-          ;(rootContainer as any).__vue_app__ = app
+            // for devtools and telemetry
+            ; (rootContainer as any).__vue_app__ = app
 
           if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
             devtoolsInitApp(app, version)
@@ -241,9 +246,9 @@ export function createAppAPI<HostElement>(
         } else if (__DEV__) {
           warn(
             `App has already been mounted.\n` +
-              `If you want to remount the same app, move your app creation logic ` +
-              `into a factory function and create fresh app instances for each ` +
-              `mount - e.g. \`const createMyApp = () => createApp(App)\``
+            `If you want to remount the same app, move your app creation logic ` +
+            `into a factory function and create fresh app instances for each ` +
+            `mount - e.g. \`const createMyApp = () => createApp(App)\``
           )
         }
       },
@@ -261,7 +266,7 @@ export function createAppAPI<HostElement>(
         if (__DEV__ && key in context.provides) {
           warn(
             `App already provides property with key "${String(key)}". ` +
-              `It will be overwritten with the new value.`
+            `It will be overwritten with the new value.`
           )
         }
         // TypeScript doesn't allow symbols as index type

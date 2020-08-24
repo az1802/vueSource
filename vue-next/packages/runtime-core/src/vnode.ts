@@ -39,7 +39,7 @@ import { isRenderingTemplateSlot } from './helpers/renderSlot'
 
 export const Fragment = (Symbol(__DEV__ ? 'Fragment' : undefined) as any) as {
   __isFragment: true
-  new (): {
+  new(): {
     $props: VNodeProps
   }
 }
@@ -111,7 +111,7 @@ export interface VNode<
   HostNode = RendererNode,
   HostElement = RendererElement,
   ExtraProps = { [key: string]: any }
-> {
+  > {
   /**
    * @internal
    */
@@ -153,6 +153,7 @@ export interface VNode<
 // can divide a template into nested blocks, and within each block the node
 // structure would be stable. This allows us to skip most children diffing
 // and only worry about the dynamic nodes (indicated by patch flags).
+// TODO 通过对子节点进行不同的块划分,我们只需要关注包含动态子节点的block。在patch阶段直接跳过静态的block
 const blockStack: (VNode[] | null)[] = []
 let currentBlock: VNode[] | null = null
 
@@ -169,7 +170,7 @@ let currentBlock: VNode[] | null = null
  * ```
  * disableTracking is true when creating a v-for fragment block, since a v-for
  * fragment always diffs its children.
- * openBlock必须在createBlock之前调用
+ * openBlock创建一个空的block,必须在createBlock之前调用
  * @private
  */
 export function openBlock(disableTracking = false) {
@@ -243,7 +244,7 @@ export function isVNode(value: any): value is VNode {
 }
 
 /**
- * 判读昂两个vnode节点类型是否一样,用于dom节点复用。
+ * 判读两个vnode节点类型是否一样,用于dom节点复用。
  */
 export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
   if (
@@ -259,9 +260,9 @@ export function isSameVNodeType(n1: VNode, n2: VNode): boolean {
 
 let vnodeArgsTransformer:
   | ((
-      args: Parameters<typeof _createVNode>,
-      instance: ComponentInternalInstance | null
-    ) => Parameters<typeof _createVNode>)
+    args: Parameters<typeof _createVNode>,
+    instance: ComponentInternalInstance | null
+  ) => Parameters<typeof _createVNode>)
   | undefined
 
 /**
@@ -378,9 +379,9 @@ function _createVNode(
     type = toRaw(type)
     warn(
       `Vue received a Component which was made a reactive object. This can ` +
-        `lead to unnecessary performance overhead, and should be avoided by ` +
-        `marking the component with \`markRaw\` or using \`shallowRef\` ` +
-        `instead of \`ref\`.`,
+      `lead to unnecessary performance overhead, and should be avoided by ` +
+      `marking the component with \`markRaw\` or using \`shallowRef\` ` +
+      `instead of \`ref\`.`,
       `\nComponent that was made reactive: `,
       type
     )
@@ -538,7 +539,7 @@ export function createCommentVNode(
 /**
  * 对vnode子节点进行规范化处理
  * null,boolean --> 注释vnode节点
- * array --> 会包裹一层Fragment
+ * array --> 会包裹一层Fragment,这样我们的组件树可以不止一个根节点
  * object --> 存在el则复用vnode节点上的信息,否则直接返回该vnode节点
  * string,number --> 文本vnode节点
  * @param child 子vnode节点
@@ -568,7 +569,12 @@ export function cloneIfMounted(child: VNode): VNode {
 
 /**
  * 规范化处理children vnode
- * TODO 待确定
+ * 根据vnode节点的类型以及其children的形式进行不同的处理同时给vnode节点shapeFlag添加相关位标识符
+ * children  null   无子节点
+ * children  数组    添加vnode的标识符ShapeFlags.ARRAY_CHILDREN
+ * children  对象    子节点为插槽形式
+ * children  函数    作用域插槽
+ * children  其它    字符串化标记问文本节点
  */
 export function normalizeChildren(vnode: VNode, children: unknown) {
   let type = 0
@@ -591,17 +597,17 @@ export function normalizeChildren(vnode: VNode, children: unknown) {
       if (!slotFlag && !(InternalObjectKey in children!)) {
         // if slots are not normalized, attach context instance
         // (compiled / normalized slots already have context)
-        ;(children as RawSlots)._ctx = currentRenderingInstance
+        ; (children as RawSlots)._ctx = currentRenderingInstance
       } else if (slotFlag === SlotFlags.FORWARDED && currentRenderingInstance) {
         // a child component receives forwarded slots from the parent.
         // its slot type is determined by its parent's slot type.
         if (
           currentRenderingInstance.vnode.patchFlag & PatchFlags.DYNAMIC_SLOTS
         ) {
-          ;(children as RawSlots)._ = SlotFlags.DYNAMIC
+          ; (children as RawSlots)._ = SlotFlags.DYNAMIC
           vnode.patchFlag |= PatchFlags.DYNAMIC_SLOTS
         } else {
-          ;(children as RawSlots)._ = SlotFlags.STABLE
+          ; (children as RawSlots)._ = SlotFlags.STABLE
         }
       }
     }

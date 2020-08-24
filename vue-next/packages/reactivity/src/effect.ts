@@ -71,7 +71,7 @@ export function effect<T = any>(
     effect()
   }
   return effect
-}
+}  
 
 // 解除effect和其依赖的dep的联系,同时设置active为false
 export function stop(effect: ReactiveEffect) {
@@ -100,7 +100,7 @@ function createReactiveEffect<T = any>(
       return options.scheduler ? undefined : fn()
     }
     if (!effectStack.includes(effect)) {//避免副作用函数多次执行
-      cleanup(effect)//清楚effect的依赖重新进行收集(vue2的实现中使用两个数组进行保存就的依赖和新的依赖)
+      cleanup(effect)//清除effect的依赖重新进行收集(vue2的实现中使用两个数组进行保存就的依赖和新的依赖)
       try {
         enableTracking()//确保可以进行依赖收集
         effectStack.push(effect)
