@@ -59,6 +59,12 @@ beforeMount,mounted,beforeUpdate,updated           componentEffect中执行
 
 
 ##### reactive逻辑原理
+reactive(处理数据为响应式)
+整体的dep存放策略采取的是map+set的形式  每一个对象对应一个map结构,每一个key对应set结构存放effect对应的dep
+track(访问数据时effect与dep互相进行依赖收集)
+trigger(设置某个值时用于执行相关的effect函数)
+
+
 
 ##### 原生的属性 新增了vnode的钩子函数
 ref key

@@ -1,6 +1,6 @@
 <template>
   <h1>vue3示例</h1>
-  <ul>
+  <!-- <ul>
     <router-link
       custom
       v-slot="{ href, navigate, isActive }"
@@ -18,14 +18,26 @@
         <component :is="Component" />
       </keep-alive>
     </transition>
-  </router-view>
+  </router-view> -->
+  <Suspense>
+    <template #default>
+      <AsyncCom />
+      <div>123</div>
+    </template>
+    <template #fallback>
+      <div>Loading...</div>
+    </template>
+  </Suspense>
 </template>
 
 <script>
 import routes from "./Routes/route";
+import AsyncCom from "./components/Test.vue";
 export default {
   name: "App",
-  components: {},
+  components: {
+    AsyncCom,
+  },
   setup() {
     return {
       routes,

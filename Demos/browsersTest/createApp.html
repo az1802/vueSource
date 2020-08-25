@@ -10,7 +10,8 @@
 
 <body>
     <div id="root" name="aaa">
-        <p>{{count}}</p>
+        <input type="radio" v-model="count">
+        <p v-html="doubleCount">dsadsa das d </p>
         <button @click="addCount">add</button>
     </div>
 
@@ -22,18 +23,21 @@
             computed,
             toRefs
         } = Vue;
+        console.log(reactive([1, 2, 3, 4]))
         const app = createApp({
-            data(){
+            data() {
                 return {
-                    count:1
+                    count: 1
                 }
             },
             setup() {
-                // let state = reactive({
-                //     count: 1
-                // })
+                let state = reactive({
+                    count: 1,
+                })
+                let arr = reactive([1, 2, 3])
+                // console.log(state, arr);
                 let count = 1;
-                let newCount = computed(() => {
+                let doubleCount = computed(() => {
                     if (state.count == 2 || state.count == 3) {
                         return 3
                     } else {
@@ -42,16 +46,13 @@
                 })
 
                 function addCount() {
-                    // state.count++;
-                    count++
-                    console.log(count);
+                    state.count++
                 }
 
                 return {
-                    // ...toRefs(state),
-                    // count,
+                    ...toRefs(state),
                     addCount,
-                    newCount
+                    doubleCount
                 }
             }
         })
